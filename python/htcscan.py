@@ -1,31 +1,9 @@
-import json as simplejson
-import urllib2
-#import serial
-import os
-import threading
-import glob
-import time
-import socket
-import MySQLdb
 import scipy.stats
-import pexpect
-from time import strftime
-from datetime import datetime
 import irutils
 #DBTOCONNECT="175.41.143.31"  # production
 DBTOCONNECT = "54.254.101.29"  # staging
-DBTABLE = "user_ir_capture_00"
-
-
-def getIRStream(uesid):
-        headers = { 'User-Agent' : "Peel" }
-        req="http://samsungir.peel.com/targets/uesid/%d" %uesid
-        request = urllib2.Request(req,headers=headers)
-        response=urllib2.urlopen(request)
-        uesdata = simplejson.loads(response.read())
-        #print uesdata
-        return uesdata
-
+DBTABLE = "user_ir_capture_"
+DBTBCNT = 20
 
 def converttonumbers(charlist):
     numlist=[]
@@ -104,32 +82,34 @@ def findbinvalue(pulselist,on1,on2,off1,off2):
 def main():
     log = irutils.Logger("htc")
     cnx = irutils.DBConnection(DBTOCONNECT, "kai")
-    query = "SELECT id, frame FROM %s" % DBTABLE
-    try:
-        cnx.cursor.execute(query)
-        captures = cnx.cursor.fetchall()
-        for id, frame in captures:
-            if frame and len(frame) and frame != "None":
-                try:
-                    fullpulse = converttonumbers(frame.split(','))
-                    if len(fullpulse) > 7:
-                        on1 = findsmalllow(fullpulse)
-                        off1 = findhigh(fullpulse)
-                        off2 = findalthigh(fullpulse, off1)
-                        if off2 is None:
-                            on2 = findaltlow(fullpulse, on1)
-                        else:
-                            on2 = 0
-                        binvalue = findbinvalue(fullpulse, on1, on2, off1, off2)
-                        updatequery = "UPDATE %s SET encodedbinary = '%s' WHERE id = %d;" % (DBTABLE, str(binvalue)[2:], id)
-                        cnx.cursor.execute(updatequery)
-                        cnx.db.commit()
-                except Exception, e:
-                    print "ERR:%d: %s." % (id, e)
-        cnx.cursor.close()
-        #clearcache()
-    except Exception, e:
-        print e
+    for idx in xrange(DBTBCNT):
+        query = "SELECT id, frame FROM %s%02d WHERE frame != 'None' and encodedbinary IS NOT NULL" % (DBTABLE, idx)
+        try:
+            cnx.cursor.execute(query)
+            captures = cnx.cursor.fetchall()
+            for id, frame in captures:
+                if frame and len(frame) and frame != "None":
+                    print "convert [%d] %s..." % (id, frame)
+                    try:
+                        fullpulse = converttonumbers(frame.split(','))
+                        if len(fullpulse) > 7:
+                            on1 = findsmalllow(fullpulse)
+                            off1 = findhigh(fullpulse)
+                            off2 = findalthigh(fullpulse, off1)
+                            if off2 is None:
+                                on2 = findaltlow(fullpulse, on1)
+                            else:
+                                on2 = 0
+                            binvalue = findbinvalue(fullpulse, on1, on2, off1, off2)
+                            updatequery = "UPDATE %s%02d SET encodedbinary = '%s' WHERE id = %d;" % (DBTABLE, idx, str(binvalue)[2:], id)
+                            cnx.cursor.execute(updatequery)
+                            cnx.db.commit()
+                    except Exception, e:
+                        print "ERR:%d: %s." % (id, e)
+            cnx.cursor.close()
+            #clearcache()
+        except Exception, e:
+            print e
 
 
 if __name__ == '__main__':
