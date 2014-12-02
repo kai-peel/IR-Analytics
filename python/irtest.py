@@ -14,9 +14,9 @@ FREQ_ERR_SIZE = 1000
 __USE_GC__ = True
 __USE_YG__ = True
 
+
 def main():
     timestampsuffix = time.strftime("%Y%m%d%H%M%S")
-
     csvfilename = "irt_%s.csv" % (timestampsuffix)
     csvfile = open(csvfilename, 'w')
     csvfile.write("ID,Code Type,")
@@ -25,7 +25,6 @@ def main():
     if __USE_YG__:
         csvfile.write("[YG] Fail to Send,[YG] Pass,[YG] Pulse Error(>%d%%),[YG] Pulse Warning(>%d)" % (PULSE_ERR_RATIO, PULSE_ERR_SIZE))
     csvfile.write('\n')
-
     logfilename = "irt_%s.txt" % (timestampsuffix)
     logfile = open(logfilename, 'w')
     start_time = datetime.datetime.now()
