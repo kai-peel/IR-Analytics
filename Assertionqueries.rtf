@@ -1,0 +1,148 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf190
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Monaco;}
+{\colortbl;\red255\green255\blue255;\red26\green26\blue26;}
+\paperw12240\paperh20160\margl1440\margr1440\vieww22140\viewh16600\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\fs24 \cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b \cf2 Assertion Queries\
+\
+\
+Less pulses in frame.\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b0 \cf2 select brandname,b.codesetid,a.uesid,frame,count(*) from uespulses a, uesidfunctionmap b, codesets c , brands d where a.uesid = b.uesid and b.codesetid = c.codesetid and c.brandid = d.brandid and c.activeflag= 'Y' and frame in ('M','T1','T2') group by brandname,b.codesetid,a.uesid,frame\
+having count(*) <=4\
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b \cf2 Brands without code sets
+\b0 \
+select * from brandtypemap a where   devicetypeid in (1,2,5) and  not exists\
+(select 1 from codesets b where activeflag = 'Y' and a.brandid = b.brandid\
+and a.devicetypeid = b.devicetypeid )\
+\
+
+\b /* Power queries */\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b0 \cf2 \
+ select brandname,codesetid,devicetypeid from codesets a , brands c where   devicetypeid in (1,5) and a.brandid = c.brandid  and a.activeflag = 'Y' and   not exists\
+(select 1 from uesidfunctionmap b where b.activeflag = 'Y' and a.codesetid = b.codesetid\
+and b.functionid =23  ) and   not exists\
+(select 1 from uesidfunctionmap b where b.activeflag = 'Y' and a.codesetid = b.codesetid\
+and b.functionid in (332,48) group by codesetid having count(*) =2   )\
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b \cf2 /* Big Pulses */
+\b0 \
+\
+select uesid,count(*) from uespulses group by uesid having count(*) > 250\
+\
+
+\b \
+Small frames\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b0 \cf2 \
+select uesid,count(*) from uespulses group by uesid having count(*) < 4\
+\
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b \cf2 /* No valid number keys */\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b0 \cf2  select brandname,codesetid,devicetypeid from codesets a , brands c where   devicetypeid in (1,2) and a.brandid = c.brandid  and a.activeflag = 'Y' and        not exists\
+(select 1 from uesidfunctionmap b where b.activeflag = 'Y' and a.codesetid = b.codesetid\
+and b.functionid <= 10 group by codesetid having count(*) = 10   )\
+\
+ select brandname,codesetid,devicetypeid from codesets a , brands c where   devicetypeid in (1,2) and a.brandid = c.brandid  and a.activeflag = 'Y' and   \
+ not exists\
+(select 1 from uesidfunctionmap b where b.activeflag = 'Y' and a.codesetid = b.codesetid\
+and b.functionid <= 10   )  \
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b \cf2 /* No valid number keys */\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b0 \cf2  select brandname,codesetid,devicetypeid from codesets a , brands c where   devicetypeid in (1,2) and a.brandid = c.brandid  and a.activeflag = 'Y' and        exists\
+(select 1 from uesidfunctionmap b where b.activeflag = 'Y' and a.codesetid = b.codesetid\
+and b.functionid <= 10 group by codesetid having count(*) <10   )\
+\
+ select brandname,codesetid,devicetypeid from codesets a , brands c where   devicetypeid in (1,2) and a.brandid = c.brandid  and a.activeflag = 'Y' and   \
+ not exists\
+(select 1 from uesidfunctionmap b where b.activeflag = 'Y' and a.codesetid = b.codesetid\
+and b.functionid <= 10   )  \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b \cf2 /* No valid channel keys */\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b0 \cf2  select distinct  brandname from codesets a , brands c where   devicetypeid in (1,2) and a.brandid = c.brandid  and a.activeflag = 'Y' and        not exists\
+(select 1 from uesidfunctionmap b where b.activeflag = 'Y' and a.codesetid = b.codesetid\
+and b.functionid in (15,16) group by codesetid having count(*) = 2   )\
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b \cf2 /* odd number pulses */
+\b0 \
+Select a.uesid from uespulses  a, uesidfunctionmap b , codesets c where a.uesid = b.uesid and b.codesetid = c.codesetid and c.activeflag = 'Y' and b.activeflag = 'Y' \
+and c.devicetypeid in (1,2) group by uesid having count(*)%2 =1\
+\
+\
+Check Partial frame wrong\
+\
+\
+ select * from uescodes a  where exists ( select 1 from uespulses b where a.uesid = b.uesid and frame = 'R') and ifnull(codetype,'Full_Repeat') = 'Full_Repeat'\
+\
+
+\b Query to check full codeset\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b0 \cf2 select a.codesetid,a.uesid,  a.functionid, functionname,a.origfunctionid , encodedbinary , group_concat(pulse order by seq) From uesidfunctionmap a , functions b, uescodes c , uespulses d, codesets e, brands f\
+where    a.functionid = b.id\
+and a.uesid = c.uesid and a.uesid = d.uesid and e.codesetid = a.codesetid   and f.brandid = e.brandid and e.devicetypeid = 1 and f.brandname = 'Benq' and e.activeflag = 'Y' and a.activeflag ='Y'\
+and functionname in ( 'Volume_Up')\
+group by a.codesetid,a.uesid,  a.functionid, functionname,a.origfunctionid , encodedbinary\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\b \cf2 \
+\
+Check Binary IR\
+\
+\pard\pardeftab720
+
+\f1\b0\fs22 \cf2 select a.uesid from \ul uescodes\ulnone  a, \ul codesets\ulnone  b, \ul uesidfunctionmap\ulnone  c\
+where a.uesid = c.uesid and c.codesetid = b.codesetid \
+and b.activeflag = 'Y' and \ul encodedbinary\ulnone  is null;\
+\
+\
+Check Frequency\
+\
+ Select count(*) from uescodes where frequency not between 19000 and 60000;\
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\b\fs24 \cf2 Check Long frames
+\f1\b0\fs22 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\fs24 \cf0  select brandname,devicetypeid,d.codesetid,count(*) ,min(seq),max(seq),a.uesid   From uesidfunctionmap a , functions b, uespulses c, codesets d, uescodes e,brands f\
+where     a.functionid = b.id   and c.uesid = a.uesid    and d.codesetid = a.codesetid   and devicetypeid in (1,2) and d.activeflag = 'Y'   and e.uesid = a.uesid  and   seq > 350 and pulse > 600  and a.activeflag = 'Y'\
+and f.brandid = d.brandid group by a.codesetid,a.uesid,  a.functionid, functionname,a.origfunctionid,d.activeflag
+\f1\fs22 \cf2 \
+\pard\pardeftab720
+\cf2 \
+}
