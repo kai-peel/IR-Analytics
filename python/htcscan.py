@@ -83,13 +83,15 @@ def main():
     log = irutils.Logger("htc")
     cnx = irutils.DBConnection(DBTOCONNECT, "kai")
     for idx in xrange(DBTBCNT):
-        query = "SELECT id, frame FROM %s%02d WHERE frame != 'None' and encodedbinary IS NOT NULL" % (DBTABLE, idx)
+        print "checking `%s%02d`..." % (DBTABLE, idx)
+        log.log.write("checking `%s%02d`..." % (DBTABLE, idx))
+        query = "SELECT id, frame FROM %s%02d WHERE frame != 'None' and encodedbinary IS NULL" % (DBTABLE, idx)
         try:
             cnx.cursor.execute(query)
             captures = cnx.cursor.fetchall()
             for id, frame in captures:
                 if frame and len(frame) and frame != "None":
-                    print "convert [%d] %s..." % (id, frame)
+                    #print "convert [%d] %s." % (id, frame)
                     try:
                         fullpulse = converttonumbers(frame.split(','))
                         if len(fullpulse) > 7:
@@ -104,9 +106,11 @@ def main():
                             updatequery = "UPDATE %s%02d SET encodedbinary = '%s' WHERE id = %d;" % (DBTABLE, idx, str(binvalue)[2:], id)
                             cnx.cursor.execute(updatequery)
                             cnx.db.commit()
+                            #log.log.write("[%d] := %s.\n" % (id, str(binvalue)[2:]))
                     except Exception, e:
                         print "ERR:%d: %s." % (id, e)
-            cnx.cursor.close()
+                        log.log.write("ERR:%d: %s." % (id, e))
+            #cnx.cursor.close()
             #clearcache()
         except Exception, e:
             print e
