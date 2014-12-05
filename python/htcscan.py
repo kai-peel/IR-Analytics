@@ -1,9 +1,11 @@
 import scipy.stats
 import irutils
+import sys
 #DBTOCONNECT="175.41.143.31"  # production
 DBTOCONNECT = "54.254.101.29"  # staging
 DBTABLE = "user_ir_capture_"
 DBTBCNT = 20
+
 
 def converttonumbers(charlist):
     numlist=[]
@@ -79,42 +81,40 @@ def findbinvalue(pulselist,on1,on2,off1,off2):
         return '0x00000000'
 
 
-def main():
+def main(argv):
     log = irutils.Logger("htc")
     cnx = irutils.DBConnection(DBTOCONNECT, "kai")
-    for idx in xrange(DBTBCNT):
-        print "checking `%s%02d`..." % (DBTABLE, idx)
-        log.log.write("checking `%s%02d`..." % (DBTABLE, idx))
-        query = "SELECT id, frame FROM %s%02d WHERE frame != 'None' and encodedbinary IS NULL" % (DBTABLE, idx)
-        try:
-            cnx.cursor.execute(query)
-            captures = cnx.cursor.fetchall()
-            for id, frame in captures:
-                if frame and len(frame) and frame != "None":
-                    #print "convert [%d] %s." % (id, frame)
-                    try:
-                        fullpulse = converttonumbers(frame.split(','))
-                        if len(fullpulse) > 7:
-                            on1 = findsmalllow(fullpulse)
-                            off1 = findhigh(fullpulse)
-                            off2 = findalthigh(fullpulse, off1)
-                            if off2 is None:
-                                on2 = findaltlow(fullpulse, on1)
-                            else:
-                                on2 = 0
-                            binvalue = findbinvalue(fullpulse, on1, on2, off1, off2)
-                            updatequery = "UPDATE %s%02d SET encodedbinary = '%s' WHERE id = %d;" % (DBTABLE, idx, str(binvalue)[2:], id)
-                            cnx.cursor.execute(updatequery)
-                            cnx.db.commit()
-                            #log.log.write("[%d] := %s.\n" % (id, str(binvalue)[2:]))
-                    except Exception, e:
-                        print "ERR:%d: %s." % (id, e)
-                        log.log.write("ERR:%d: %s." % (id, e))
-            #cnx.cursor.close()
-            #clearcache()
-        except Exception, e:
-            print e
+    table = "%s%s" % (DBTABLE, argv[0])
+    print "checking `%s`..." % table
+    log.log.write("checking `%s`..." % table)
+    query = "SELECT id, frame FROM %s WHERE frame != 'None' and encodedbinary IS NULL" % table
+    try:
+        cnx.cursor.execute(query)
+        captures = cnx.cursor.fetchall()
+        for pid, frame in captures:
+            if frame and len(frame) and frame != "None":
+                try:
+                    fullpulse = converttonumbers(frame.split(','))
+                    if len(fullpulse) > 7:
+                        on1 = findsmalllow(fullpulse)
+                        off1 = findhigh(fullpulse)
+                        off2 = findalthigh(fullpulse, off1)
+                        if off2 is None:
+                            on2 = findaltlow(fullpulse, on1)
+                        else:
+                            on2 = 0
+                        binvalue = findbinvalue(fullpulse, on1, on2, off1, off2)
+                        updatequery = "UPDATE %s SET encodedbinary = '%s' WHERE id = %d;" % (table, str(binvalue)[2:], pid)
+                        cnx.cursor.execute(updatequery)
+                        cnx.db.commit()
+                except Exception, e:
+                    print "ERR:%d: %s." % (pid, e)
+                    log.log.write("ERR:%d: %s." % (pid, e))
+        #cnx.cursor.close()
+        #clearcache()
+    except Exception, e:
+        print e
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
