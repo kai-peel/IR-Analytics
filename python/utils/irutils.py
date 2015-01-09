@@ -122,9 +122,9 @@ def sendadb_rooted_s4(frequency, ir_data):
         print "ERR:sendadb_rooted_s4: %s" % e
 
 
-def testadb_rooted_s4(frequency, ir_data):
+def testadb_rooted_s4(ir_data):
     try:
-        adb_cmd = 'echo ' + str(frequency) + ',' + ir_data + ' > /sys/class/sec/sec_ir/ir_send' + '\r\nexit\r\n'
+        adb_cmd = 'echo ' + ir_data + ' > /sys/class/sec/sec_ir/ir_send' + '\r\nexit\r\n'
         pipe = subprocess.Popen(['adb', 'shell'], shell=True, stdin=subprocess.PIPE)
         pipe.communicate(input=adb_cmd)
         return pipe
