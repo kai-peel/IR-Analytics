@@ -1,5 +1,5 @@
 __version__ = "4.0.0"
-__date__ = "25-Nov-2014"
+__date__ = "05-DEC-2014"
 import subprocess
 import simplejson
 import urllib2
@@ -7,12 +7,13 @@ import time
 import MySQLdb
 import datetime
 import pexpect
-#IRDB = "175.41.143.31"  # production
-#IRDB = "54.254.101.29"  # staging
+IRDBV1 = "175.41.143.31"  # production
+IRDBV2 = "54.251.240.47"  # secured production
+IRDBSG = "54.254.101.29"  # staging
 
 
 class DBConnection:
-    def __init__(self, host="175.41.143.31", db="devices", user="zdbadmin", passwd="z3l4yi23"):
+    def __init__(self, host=IRDBV2, db="devices", user="zdbadmin", passwd="z3l4yi23"):
         try:
             self.db = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
             self.cursor = self.db.cursor()
@@ -21,6 +22,7 @@ class DBConnection:
 
     def __del__(self):
         try:
+            #print 'DBConnection:__del__...'
             self.cursor.close()
             self.db.close()
         except Exception, e:
@@ -67,8 +69,25 @@ class Logger:
         self.log.close()
         #self.err.close()
 
+    def write(self, b):
+        self.log.write(b)
+        print b
+
 
 def get_ir_stream(uesid):
+    headers = {'User-Agent': "Peel"}
+    req = "http://partners-ir.peel.com/targets/uesid/%d" % uesid
+    try:
+        request = urllib2.Request(req, headers=headers)
+        response = urllib2.urlopen(request)
+        uesdata = simplejson.loads(response.read())
+        return uesdata
+    except Exception, e:
+        print "ERR:get_ir_stream: %s" % e
+        return None
+
+
+def get_ir_stream2(uesid):
     headers = {'User-Agent': "Peel"}
     req = "http://partners-ir.peel.com/targets/uesid/%d" % uesid
     try:
@@ -96,6 +115,16 @@ def build_pulses(repeat_cnt, ir_data, ir_repeat):
 def sendadb_rooted_s4(frequency, ir_data):
     try:
         adb_cmd = 'echo ' + str(frequency) + ',' + ','.join(ir_data) + ' > /sys/class/sec/sec_ir/ir_send' + '\r\nexit\r\n'
+        pipe = subprocess.Popen(['adb', 'shell'], shell=True, stdin=subprocess.PIPE)
+        pipe.communicate(input=adb_cmd)
+        return pipe
+    except Exception, e:
+        print "ERR:sendadb_rooted_s4: %s" % e
+
+
+def testadb_rooted_s4(frequency, ir_data):
+    try:
+        adb_cmd = 'echo ' + str(frequency) + ',' + ir_data + ' > /sys/class/sec/sec_ir/ir_send' + '\r\nexit\r\n'
         pipe = subprocess.Popen(['adb', 'shell'], shell=True, stdin=subprocess.PIPE)
         pipe.communicate(input=adb_cmd)
         return pipe

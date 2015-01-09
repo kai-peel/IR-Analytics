@@ -1,3 +1,5 @@
+__version__ = "1.0.0"
+__date__ = "05-DEC-2014"
 import scipy.stats
 import irutils
 import sys
