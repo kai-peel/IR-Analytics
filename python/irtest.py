@@ -71,7 +71,7 @@ def main():
                     # wait for gc-irl power up.
                     time.sleep(2)
                     irutils.sendadb_rooted_s4(cloudfrequency, cloudirdata)
-                    #send_cir_ios("C:/log/uesid.txt", uesid)
+                    irutils.send_cir_adb(cloudfrequency, cloudirdata)
 
                     print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
                     print ">SEND>|", cloudfrequency, '|', ','.join(cloudirdata)
@@ -86,6 +86,7 @@ def main():
                             logfile.write("GC-IRL|%d|%s\n" % (gcfrequency, gcirdata))
                         else:
                             gcirdata = None
+
                     if __USE_YG__:
                         ygthread.join()
                         if len(ygthread.data_wave_buf):

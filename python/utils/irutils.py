@@ -7,6 +7,7 @@ import time
 import MySQLdb
 import datetime
 import pexpect
+import os
 IRDBV1 = "175.41.143.31"  # production
 IRDBV2 = "54.251.240.47"  # secured production
 IRDBSG = "54.254.101.29"  # staging
@@ -131,6 +132,17 @@ def testadb_rooted_s4(ir_data):
     except Exception, e:
         print "ERR:sendadb_rooted_s4: %s" % e
 
+
+def send_cir_adb(frequency, irdata):
+    adbcmdprefix = 'adb shell '
+    cir_file = '/sdcard/irtest.txt'
+    adbcmd = adbcmdprefix + '"echo 1,' + str(frequency) + "," + ",".join(irdata) + ' > /sdcard/irtest.txt"'
+    print "adb shell command is \n" + adbcmd
+    os.popen(adbcmd)
+    adbcmd = adbcmdprefix + 'am start -n com.peel.peelkktestapp.app/com.peel.peelkktestapp.app.MainActivity'
+    print "adb shell command is \n" + adbcmd
+    os.popen(adbcmd)
+
 """
 def sendadb_ios_http(filename, uesid):
     try:
@@ -146,17 +158,6 @@ def sendadb_smartircmd(frequency, irdata):
     adbcmdprefix = 'adb shell '
     # For smartircmd (without going thru ConsumerIrManager)
     adbcmd = adbcmdprefix + '/dev/smartircmd ' +  str(frequency) + " " + ",".join(irdata)
-    print "adb shell command is \n" + adbcmd
-    os.popen(adbcmd)
-
-
-def send_cir_adb(frequency, irdata):
-    adbcmdprefix = 'adb shell '
-    cir_file = '/sdcard/irtest.txt'
-    adbcmd = adbcmdprefix + '"echo 1,' + str(frequency) + "," + ",".join(irdata) + ' > /sdcard/irtest.txt"'
-    print "adb shell command is \n" + adbcmd
-    os.popen(adbcmd)
-    adbcmd = adbcmdprefix + 'am start -n com.peel.peelkktestapp.app/com.peel.peelkktestapp.app.MainActivity'
     print "adb shell command is \n" + adbcmd
     os.popen(adbcmd)
 """
