@@ -28,7 +28,8 @@ class IRUtilities(threading.Thread):
         if self.isMac:
             ser = serial.Serial(self.port, 9600, parity=serial.PARITY_NONE, timeout=10)
         else:
-            ser = serial.Serial("COM11", 9600, parity=serial.PARITY_NONE, timeout=30)
+            print 'COM2'
+            ser = serial.Serial("COM2", 9600, parity=serial.PARITY_NONE, timeout=30)
         if ser.isOpen():
             ser.close()
         ser.open()

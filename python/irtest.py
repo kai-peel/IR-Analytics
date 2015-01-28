@@ -4,9 +4,9 @@ import time
 import datetime
 import traceback
 import testset
-import irutils
-import gcutils
-import ygutils
+from utils import irutils
+from utils import gcutils
+from utils import ygutils
 # error threshold
 PULSE_ERR_SIZE = 3
 PULSE_ERR_RATIO = 10
@@ -42,7 +42,7 @@ def main():
             uesid = eachuesid
             n += 1
             print "\nChecking %dth UESID=%d ..." % (n, uesid)
-            uesdata = irutils.getIRStream(uesid)
+            uesdata = irutils.get_ir_stream(uesid)
             if uesdata is not None:
                 csvfile.write("%d" % uesid)
                 logfile.write("\n<UESID=%d\n" % uesid)
@@ -71,7 +71,7 @@ def main():
                     # wait for gc-irl power up.
                     time.sleep(2)
                     irutils.sendadb_rooted_s4(cloudfrequency, cloudirdata)
-                    irutils.send_cir_adb(cloudfrequency, cloudirdata)
+                    #irutils.send_cir_adb(cloudfrequency, cloudirdata)
 
                     print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
                     print ">SEND>|", cloudfrequency, '|', ','.join(cloudirdata)

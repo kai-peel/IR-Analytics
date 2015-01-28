@@ -6,7 +6,7 @@ import urllib2
 import time
 import MySQLdb
 import datetime
-import pexpect
+#import pexpect
 import os
 IRDBV1 = "175.41.143.31"  # production
 IRDBV2 = "54.251.240.47"  # secured production
