@@ -5,6 +5,7 @@ import glob
 import sys
 import serial
 
+COMPORT = 'COM1'
 
 class IRUtilities(threading.Thread):
     isMac = False
@@ -28,7 +29,8 @@ class IRUtilities(threading.Thread):
         if self.isMac:
             ser = serial.Serial(self.port, 9600, parity=serial.PARITY_NONE, timeout=10)
         else:
-            ser = serial.Serial("COM2", 9600, parity=serial.PARITY_NONE, timeout=30)
+            print COMPORT
+            ser = serial.Serial(COMPORT, 9600, parity=serial.PARITY_NONE, timeout=10)
         if ser.isOpen():
             ser.close()
         ser.open()
