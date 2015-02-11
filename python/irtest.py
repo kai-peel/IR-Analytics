@@ -92,8 +92,8 @@ def main():
                         if len(ygthread.data_wave_buf):
                             ygirdata = ",".join(map(str, ygthread.data_wave_buf))
                             ygfrequency = ygthread.data_wave_freq
-                            print "YG-920|", ygfrequency, '|', ygirdata
-                            logfile.write("YG-920|%d|%s\n" % (ygfrequency, ygirdata))
+                            print "YG-920|", ygthread.data_format, '|', ygthread.data_full_code, '|', ygirdata
+                            logfile.write("YG-920|%s|%s|%s\n" % (ygthread.data_format, ygthread.data_full_code, ygirdata))
                         else:
                             ygirdata = None
 
