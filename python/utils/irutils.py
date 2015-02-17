@@ -58,9 +58,9 @@ class Logger:
     def __init__(self, tag):
         time_stamp_suffix = time.strftime("%Y%m%d%H%M%S")
         log_filename = "%sLog%s.txt" % (tag, time_stamp_suffix)
-        #err_filename = "%sErr%s.txt" % (tag, time_stamp_suffix)
+        out_filename = "%sOut%s.txt" % (tag, time_stamp_suffix)
         self.log = open(log_filename, 'w')
-        #self.err = open(err_filename, 'w')
+        self.out = open(out_filename, 'w')
         self.start_time = datetime.datetime.now()
         self.log.write("Started: %s.\n" % self.start_time)
 
@@ -68,7 +68,7 @@ class Logger:
         end_time = datetime.datetime.now()
         self.log.write("Duration: from %s to %s (%s).\n" % (self.start_time, end_time, (end_time - self.start_time)))
         self.log.close()
-        #self.err.close()
+        self.out.close()
 
     def write(self, b):
         self.log.write(b)
@@ -134,14 +134,18 @@ def testadb_rooted_s4(ir_data):
 
 
 def send_cir_adb(frequency, irdata):
-    adbcmdprefix = 'adb shell '
-    cir_file = '/sdcard/irtest.txt'
-    adbcmd = adbcmdprefix + '"echo 1,' + str(frequency) + "," + ",".join(irdata) + ' > /sdcard/irtest.txt"'
-    print "adb shell command is \n" + adbcmd
-    os.popen(adbcmd)
-    adbcmd = adbcmdprefix + 'am start -n com.peel.peelkktestapp.app/com.peel.peelkktestapp.app.MainActivity'
-    print "adb shell command is \n" + adbcmd
-    os.popen(adbcmd)
+    try:
+        adbcmdprefix = 'adb shell '
+        cir_file = '/sdcard/irtest.txt'
+        adbcmd = adbcmdprefix + '"echo 1,' + str(frequency) + "," + ",".join(irdata) + ' > /sdcard/irtest.txt"'
+        print "adb shell command is \n" + adbcmd
+        os.popen(adbcmd)
+        adbcmd = adbcmdprefix + 'am start -n com.peel.peelkktestapp.app/com.peel.peelkktestapp.app.MainActivity'
+        print "adb shell command is \n" + adbcmd
+        os.popen(adbcmd)
+    except Exception, e:
+        print "ERR:send_cir_adb: %s" % e
+
 
 """
 def sendadb_ios_http(filename, uesid):
