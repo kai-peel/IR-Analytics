@@ -55,7 +55,34 @@ def yg_fprint(log, freq, pulse):
         return None, None
 
 
-def check_irdb(cnx, fmt, val, func, brand, dtype):
+def check_brand_in_codesets(cnx, brand, list):
+    try:
+        query = ("SELECT DISTINCT a.codesetid FROM codesets a, brands b "
+                 "WHERE a.brandid=b.brandid "
+                 "AND b.brandname LIKE '%s' "
+                 "AND a.codesetid IN (%s) " % (brand, list))
+        cnx.cursor.execute(query)
+        return cnx.cursor.fetchall()
+    except Exception, e:
+        print 'check_brand_in_codesets:%s' % e
+        return []
+
+
+def check_irdb(cnx, val, func, dtype):
+    try:
+        query = ("SELECT DISTINCT a.codesetid FROM uesidfunctionmap a, uescodes b, codesets c, functions d "
+                 "WHERE a.uesid=b.uesid AND a.codesetid=c.codesetid AND a.functionid=d.id "
+                 "AND a.activeflag='Y' and c.activeflag='Y' "
+                 "AND d.functionname LIKE '%s' AND b.encodedbinary2='%s' "
+                 "AND c.devicetypeid=%d " % (func, val, device_type_id[dtype]))
+        cnx.cursor.execute(query)
+        return cnx.cursor.fetchall()
+    except Exception, e:
+        print 'check_irdb:%s' % e
+        return []
+
+
+def check_irdb_w_brand(cnx, val, func, dtype, brand):
     try:
         query = ("SELECT DISTINCT a.codesetid FROM uesidfunctionmap a, uescodes b, codesets c, functions d, brands e "
                  "WHERE a.uesid=b.uesid AND a.codesetid=c.codesetid AND a.functionid=d.id AND c.brandid=e.brandid "
@@ -65,7 +92,7 @@ def check_irdb(cnx, fmt, val, func, brand, dtype):
         cnx.cursor.execute(query)
         return cnx.cursor.fetchall()
     except Exception, e:
-        print 'check_irdb:%s' % e
+        print 'check_irdb_w_brand:%s' % e
         return []
 
 
@@ -88,7 +115,7 @@ def check_codeset(log, cnx, fname, dtype, brand):
                         (fmt, val) = yg_fprint(log, freq, pulse)
                         if val is not None:
                             key_count += 1
-                            codesets = check_irdb(cnx, fmt, val, func, brand, dtype)
+                            codesets = check_irdb(cnx, val, func, dtype)
                             print codesets
                             for codeset in codesets:
                                 dups[str(codeset[0])] += 1
@@ -96,10 +123,19 @@ def check_codeset(log, cnx, fname, dtype, brand):
                     log.write('check_codeset:readlines: %s' % e)
             log.write('Duplicate codesets: %s.\n' % dups)
             log.write('Total key checked: %d.\n' % key_count)
+            sz_codesets = ''
             for each in dups:
-                if dups[each] >= key_count:
-                    log.out.write('%s,' % each)
+                # key_count - 1, for we are checking both "power" and "poweron".
+                if dups[each] >= (key_count - 1):
+                    #log.out.write('%s,' % each)
+                    sz_codesets += ('%s,' % each)
                     old = True
+            if old and len(sz_codesets) > 0:
+                codesets = check_brand_in_codesets(cnx, brand, sz_codesets[:-1])
+                for codeset in codesets:
+                    log.out.write('%d,' % codeset[0])
+                log.out.write('|')
+            log.out.write('%s' % sz_codesets)
             log.out.write('|%d|%s\n' % (key_count, dups))
         f.close()
         return old, key_count
@@ -118,7 +154,7 @@ def get_meta(filename):
 def quarantine(path):
     log = irutils.Logger('qt')
     cnx = irutils.DBConnection()
-    log.out.write('Filename|Duplicate|Key Tested|Similar\n')
+    log.out.write('Filename|Duplicate|All Brands|Key Tested|Similar\n')
     try:
         for f in os.listdir(path):
             print f
@@ -134,6 +170,9 @@ def quarantine(path):
                     log.bat.write('move \"%s\" \"%s\"\n' % (os.path.join(path, f), os.path.join(path, 'bad')))
                 else:
                     log.bat.write('move \"%s\" \"%s\"\n' % (os.path.join(path, f), os.path.join(path, 'new')))
+                log.out.flush()
+                log.bat.flush()
+                log.log.flush()
     except Exception, e:
         log.write('quarantine:%s' % e)
 
