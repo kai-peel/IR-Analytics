@@ -6,7 +6,7 @@ import urllib2
 import time
 import MySQLdb
 import datetime
-#import pexpect
+import pexpect
 import os
 IRDBV1 = "175.41.143.31"  # production
 IRDBV2 = "54.251.240.47"  # secured production
@@ -57,10 +57,12 @@ class Logger:
 
     def __init__(self, tag):
         time_stamp_suffix = time.strftime("%Y%m%d%H%M%S")
-        log_filename = "%sLog%s.txt" % (tag, time_stamp_suffix)
-        out_filename = "%sOut%s.txt" % (tag, time_stamp_suffix)
+        log_filename = "%s%s.log" % (tag, time_stamp_suffix)
+        out_filename = "%s%s.out" % (tag, time_stamp_suffix)
+        bat_filename = "%s%s.bat" % (tag, time_stamp_suffix)
         self.log = open(log_filename, 'w')
         self.out = open(out_filename, 'w')
+        self.bat = open(bat_filename, 'w')
         self.start_time = datetime.datetime.now()
         self.log.write("Started: %s.\n" % self.start_time)
 
@@ -69,6 +71,7 @@ class Logger:
         self.log.write("Duration: from %s to %s (%s).\n" % (self.start_time, end_time, (end_time - self.start_time)))
         self.log.close()
         self.out.close()
+        self.bat.close()
 
     def write(self, b):
         self.log.write(b)
@@ -130,7 +133,7 @@ def testadb_rooted_s4(ir_data):
         pipe.communicate(input=adb_cmd)
         return pipe
     except Exception, e:
-        print "ERR:sendadb_rooted_s4: %s" % e
+        print "ERR:testadb_rooted_s4: %s" % e
 
 
 def send_cir_adb(frequency, irdata):

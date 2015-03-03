@@ -91,7 +91,7 @@ class Listener(threading.Thread):
         )
         #print "listening from %d" % self.hWnd
 
-        t = threading.Timer(7.0, self.OnTimer)  # Quit at timer fire
+        t = threading.Timer(10.0, self.OnTimer)  # Quit at timer fire
         t.start()
 
         win32gui.PumpMessages()
