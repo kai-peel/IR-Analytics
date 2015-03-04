@@ -13,7 +13,6 @@ from utils import ygutils
 
 #FILE_EXTENSION = '.pir'
 FILE_EXTENSION = '.txt'
-FILE_EXTENSION2 = '.TXT'
 
 functions = {'tv': [], 'stb': [], 'dvd': [], 'av': [], 'prj': [], 'ac': []}
 device_type_id = {'tv': 1, 'stb': 2, 'dvd': 3, 'av': 5, 'prj': 10, 'ac': 18}
@@ -51,7 +50,7 @@ def yg_fprint(log, freq, pulse):
             log.write('recv \"%s\", \"%s\".\n' % (th.data_format, th.data_full_code))
             return th.data_format, th.data_full_code
     except Exception, e:
-        #log.write('yg_fprint:%s' % e)
+        log.write('yg_fprint:%s\n' % e)
         return None, None
 
 
@@ -120,7 +119,7 @@ def check_codeset(log, cnx, fname, dtype, brand):
                             for codeset in codesets:
                                 dups[str(codeset[0])] += 1
                 except Exception, e:
-                    log.write('check_codeset:readlines: %s' % e)
+                    log.write('check_codeset:readlines: %s\n' % e)
             log.write('Duplicate codesets: %s.\n' % dups)
             log.write('Total key checked: %d.\n' % key_count)
             sz_codesets = ''
@@ -139,7 +138,7 @@ def check_codeset(log, cnx, fname, dtype, brand):
         f.close()
         return old, key_count
     except Exception, e:
-        log.write('check_codeset:%s' % e)
+        log.write('check_codeset:%s\n' % e)
         return old, key_count
 
 
@@ -156,8 +155,7 @@ def quarantine(path):
     log.out.write('Filename|Duplicate|All Brands|Key Tested|Similar\n')
     try:
         for f in os.listdir(path):
-            print f
-            if f.endswith(FILE_EXTENSION) or f.endswith(FILE_EXTENSION2):
+            if f.lower().endswith(FILE_EXTENSION):
                 (t, b) = get_meta(os.path.splitext(f)[0])
                 log.write('\nchecking \"%s\" (type=%s, brand=%s)...\n' % (f, t, b))
                 log.out.write('%s|' % f)
@@ -173,7 +171,7 @@ def quarantine(path):
                 log.bat.flush()
                 log.log.flush()
     except Exception, e:
-        log.write('quarantine:%s' % e)
+        log.write('quarantine:%s\n' % e)
 
 if __name__ == '__main__':
     try:
