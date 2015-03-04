@@ -51,10 +51,10 @@ def main():
     log = ir.Logger("f2s")
     cnx = ir.DBConnection()
 
-    # find a/c codes id as "brute force" 16_F_A_C=6206, but no associated a/c code PowerOn=332.
+    # find a/c codes id as "brute force" 20_F_A_C=6210, but no associated a/c code PowerOn=332.
     query = ("SELECT DISTINCT m.codesetid from uesidfunctionmap m "
              "JOIN codesets s ON s.codesetid = m.codesetid "
-             "WHERE m.functionid = 6206 "
+             "WHERE m.functionid = 6210 "
              "AND m.activeflag='Y' AND s.activeflag = 'Y' "
              "AND m.codesetid NOT IN "
              "(SELECT DISTINCT codesetid FROM uesidfunctionmap "

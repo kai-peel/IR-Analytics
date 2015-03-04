@@ -14,55 +14,85 @@ FILE_EXTENSION2 = '.TXT'
 device_type_id = {'tv': 1, 'stb': 2, 'dvd': 3, 'av': 5, 'prj': 10, 'ac': 18}
 
 
+def get_brandid(cnx, brand):
+    try:
+        query = ("SELECT brandid FROM brands WHERE brandname LIKE '%s' " % brand)
+        cnx.cursor.execute(query)
+        row = cnx.cursor.fetchone()
+        return row[0]
+
+    except Exception, e:
+        query = ("INSERT INTO brands (brandname) VALUES ('%s') " % brand)
+        cnx.cursor.execute(query)
+        cnx.db.commit()
+        return 0
+
+
 def assign_codesetid(cnx, device, brand):
     try:
         codesetid = (device_type_id[device] + 1) * 100000
         if codesetid > 700000:
             codesetid = 700000
-
-        query = ("SELECT MAX(codesetid) FROM codesets WHERE codesetid < %d "
-                 % codesetid)
+        query = ("SELECT MAX(codesetid) FROM codesets WHERE codesetid < %d " % codesetid)
         cnx.cursor.execute(query)
         row = cnx.cursor.fetchone()
         codesetid = row[0] + 1
 
+        brandid = get_brandid(cnx, brand)
+        if brandid <= 0:
+            brandid = get_brandid(cnx, brand)
+
+        query = ("INSERT INTO codesets VALUES (%d, %d, %d, 999, NULL, CURDATE(), 'Y') "
+                 % (brandid, device_type_id[device], codesetid))
+        cnx.cursor.execute(query)
+        cnx.db.commit()
+
+        return codesetid
+
     except Exception, e:
         print 'assign_codesetid:%s' % e
-        return []
+        return 0
 
 
 def get_meta(filename):
-    meta = re.split(' |  |_', filename)
-    device = meta[0]
-    brand = meta[2]
-    return device, brand
+    try:
+        meta = re.split(' |  |_', filename)
+        device = meta[0].lower()
+        brand = meta[2].lower()
+        return device, brand
+    except Exception, e:
+        print('print_meta:%s' % e)
+        return None, None
+
+
+def concat_files(log, fname, cid):
+    with open(fname, 'r') as f:
+        content = f.readlines()
+        for each in content:
+            try:
+                if len(each) > 6:
+                    log.out.write('%s' % each.replace('000000', str(cid)))
+            except Exception, e:
+                log.write('\nconcat_files:%s\n' % e)
+        f.close()
 
 
 def batch_insert(path):
     log = irutils.Logger('bi')
     cnx = irutils.DBConnection()
-    log.out.write('Filename|Codeset\n')
+    log.write('Filename|Type|Brand|Codeset\n')
     try:
         for f in os.listdir(path):
             print f
             if f.endswith(FILE_EXTENSION) or f.endswith(FILE_EXTENSION2):
                 (t, b) = get_meta(os.path.splitext(f)[0])
-
-                log.write('\nchecking \"%s\" (type=%s, brand=%s)...\n' % (f, t, b))
-                log.out.write('%s|' % f)
-                (old, key_count) = check_codeset(log, cnx, os.path.join(path, f), t.lower(), b.lower())
-                if old:
-                    log.bat.write('move \"%s\" \"%s\"\n' % (os.path.join(path, f), os.path.join(path, 'old')))
-                    #os.rename(os.path.join(path, f), os.path.join(path, 'old/' + f))
-                elif key_count == 0:
-                    log.bat.write('move \"%s\" \"%s\"\n' % (os.path.join(path, f), os.path.join(path, 'bad')))
-                else:
-                    log.bat.write('move \"%s\" \"%s\"\n' % (os.path.join(path, f), os.path.join(path, 'new')))
+                codesetid = assign_codesetid(cnx, t, b)
+                log.write('%s|%s|%s|%d\n' % (f, t, b, codesetid))
+                concat_files(log, os.path.join(path, f), codesetid)
                 log.out.flush()
-                log.bat.flush()
                 log.log.flush()
     except Exception, e:
-        log.write('quarantine:%s' % e)
+        log.write('\nbatch_insert:%s\n' % e)
 
 if __name__ == '__main__':
     try:
