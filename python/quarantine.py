@@ -110,7 +110,7 @@ def check_codeset(log, cnx, fname, dtype, brand):
                     c = each.split('|')
                     freq = int(c[1])
                     func = c[3].lower()
-                    pulse = c[4]
+                    pulse = c[4].rstrip()
                     if func in funcs:
                         (fmt, val) = yg_fprint(log, freq, pulse)
                         if val is not None:

@@ -108,9 +108,9 @@ def check_codeset(log, cnx, fname, dtype, brand):
             for each in content:
                 try:
                     c = each.split('|')
-                    freq = int(c[1])
-                    func = c[3].lower()
-                    pulse = c[4]
+                    freq = int(c[2])
+                    func = c[1].lower()
+                    pulse = c[3].rstrip()
                     if func in funcs:
                         (fmt, val) = yg_fprint(log, freq, pulse)
                         if val is not None:
@@ -147,7 +147,7 @@ def check_codeset(log, cnx, fname, dtype, brand):
 def get_meta(filename):
     meta = re.split(' |  |_', filename)
     dtype = meta[0]
-    brand = meta[2]
+    brand = meta[1]
     return dtype, brand
 
 
