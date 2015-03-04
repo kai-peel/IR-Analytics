@@ -9,6 +9,7 @@ OP_MODE = ['H', 'C']
 
 
 def dup_F_to_S(cnx, codesetid):
+    do_commit = False
     for t in xrange(16, 31):
         for f in FAN_SPEED:
             for m in OP_MODE:
@@ -41,13 +42,15 @@ def dup_F_to_S(cnx, codesetid):
                                 #print query
                                 try:
                                     cnx.cursor.execute(query)
-                                    cnx.db.commit()
+                                    do_commit = True
                                 except Exception, e:
                                     print e
                         except Exception, e:
                             print e
                 except Exception, e:
                     print e
+    if do_commit:
+        cnx.db.commit()
 
 
 def main():

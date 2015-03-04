@@ -134,8 +134,7 @@ def check_codeset(log, cnx, fname, dtype, brand):
                 codesets = check_brand_in_codesets(cnx, brand, sz_codesets[:-1])
                 for codeset in codesets:
                     log.out.write('%d,' % codeset[0])
-                log.out.write('|')
-            log.out.write('%s' % sz_codesets)
+            log.out.write('|%s' % sz_codesets)
             log.out.write('|%d|%s\n' % (key_count, dups))
         f.close()
         return old, key_count
