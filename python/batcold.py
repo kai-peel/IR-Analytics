@@ -9,7 +9,6 @@ import re
 from utils import irutils
 
 FILE_EXTENSION = '.txt'
-FILE_EXTENSION2 = '.TXT'
 
 device_type_id = {'tv': 1, 'stb': 2, 'dvd': 3, 'av': 5, 'prj': 10, 'ac': 18}
 
@@ -58,10 +57,10 @@ def get_meta(filename):
     try:
         meta = re.split(' |  |_', filename)
         device = meta[0].lower()
-        brand = meta[2].lower()
+        brand = meta[1].lower()
         return device, brand
     except Exception, e:
-        print('print_meta:%s' % e)
+        print('get_meta:%s' % e)
         return None, None
 
 
@@ -70,8 +69,12 @@ def concat_files(log, fname, cid):
         content = f.readlines()
         for each in content:
             try:
-                if len(each) > 6:
-                    log.out.write('%s\n' % each.rstrip().replace('000000', str(cid)))
+                if len(each) > 24:
+                    c = each.split('|')
+                    freq = c[2]
+                    func = c[1]
+                    pulse = c[3].rstrip()
+                    log.out.write('%d|%s|Full_Repeat|%s|%s|\n' % (cid, freq, func, pulse))
             except Exception, e:
                 log.write('\nconcat_files:%s\n' % e)
         f.close()
@@ -84,7 +87,7 @@ def batch_insert(path):
     try:
         for f in os.listdir(path):
             print f
-            if f.endswith(FILE_EXTENSION) or f.endswith(FILE_EXTENSION2):
+            if f.lower().endswith(FILE_EXTENSION):
                 (t, b) = get_meta(os.path.splitext(f)[0])
                 (codesetid, brandid) = assign_codesetid(cnx, t, b)
                 log.write('%s|%d|%d|%d\n' % (f, device_type_id[t], brandid, codesetid))
