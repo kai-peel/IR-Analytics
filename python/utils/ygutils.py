@@ -52,7 +52,7 @@ PCOPYDATASTRUCT = ctypes.POINTER(COPYDATASTRUCT)
 
 
 class Listener(threading.Thread):
-    def __init__(self, frequency):
+    def __init__(self, frequency=38029, timeout=10.0):
         threading.Thread.__init__(self)
         self.data_type = None
         self.data_sys_code = None
@@ -66,6 +66,7 @@ class Listener(threading.Thread):
         self.data_wave_buf = []
         self.data_wave_freq = None
         self.frequency = frequency
+        self.timeout = timeout
 
     def run(self):
         message_map = {
@@ -91,7 +92,7 @@ class Listener(threading.Thread):
         )
         #print "listening from %d" % self.hWnd
 
-        t = threading.Timer(10.0, self.OnTimer)  # Quit at timer fire
+        t = threading.Timer(self.timeout, self.OnTimer)  # Quit at timer fire
         t.start()
 
         win32gui.PumpMessages()
