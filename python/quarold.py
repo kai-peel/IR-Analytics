@@ -39,7 +39,7 @@ def yg_fprint(log, freq, pulse):
     try:
         th = ygutils.Listener(freq)
         th.start()
-        time.sleep(2)
+        time.sleep(1.5)
 
         ir = str(freq) + ',' + pulse
         #log.write('send \"%s\".\n' % ir)

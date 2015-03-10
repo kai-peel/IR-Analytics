@@ -39,18 +39,17 @@ def yg_read(log, func, timeout):
         return None, None
 
 
-def check_irdb(cnx, keyid, fmt, val):
+def check_irdb(cnx, fmt, val):
     try:
-        query = ("SELECT brandname, devicetype, a.codesetid, count(*) "
-                 "FROM uesidfunctionmap a, codesets b, uescodes c, devicetypes d, brands e "
+        query = ("SELECT brandname, devicetype, a.codesetid, functionname, count(*) "
+                 "FROM uesidfunctionmap a, codesets b, uescodes c, devicetypes d, brands e, functions f "
                  "WHERE a.codesetid = b.codesetid AND a.uesid = c.uesid "
                  "AND a.activeflag = 'Y' AND b.activeflag = 'Y' "
-                 "AND d.devicetypeid = b.devicetypeid AND e.brandid = b.brandid "
+                 "AND d.devicetypeid = b.devicetypeid AND e.brandid = b.brandid AND a.functionid = f.id "
                  #"AND a.functionid = %d AND c.format = '%s' AND c.encodedbinary2 LIKE '%s%%' "
-                 "AND a.functionid = %d AND c.encodedbinary2 LIKE '%s%%' "
-                 "GROUP BY b.brandid "
-                 % (keyid, val))
-        print query
+                 "AND c.encodedbinary2 LIKE '%s%%' "
+                 "GROUP BY b.brandid, b.devicetypeid, a.functionid " % val)
+        #print query
         cnx.cursor.execute(query)
         return cnx.cursor.fetchall()
 
@@ -59,21 +58,21 @@ def check_irdb(cnx, keyid, fmt, val):
         return []
 
 
-def lookup(keyid=23, timeout=1000):
-    log = irutils.Logger('lu')
+def lookup2(timeout=1000):
+    log = irutils.Logger('lk')
     cnx = irutils.DBConnection()
     log.out.write('Function ID|Funtion Name|Brand|Type|Codesets|Total Found\n')
     try:
-        func = get_func_by_id(cnx, keyid)
-        (fmt, val) = yg_read(log, func, timeout)
+        #func = get_func_by_id(cnx, keyid)
+        (fmt, val) = yg_read(log, 'Any', timeout)
         if fmt is not None and val is not None:
             frame = val.split('-', 1)[0].rstrip()
             print ('Check for "%s"...' % frame)
-            codesets = check_irdb(cnx, keyid, fmt, frame)
-            print('ID\t|Name\t|Brand\t|Type\t|Codesets\t|Total Found')
+            codesets = check_irdb(cnx, fmt, frame)
+            print('Name\t|Brand\t|Type\t|Codesets\t|Total Found')
             for each in codesets:
-                log.out.write('%d|%s|%s|%s|%d|%d\n' % (keyid, func, each[0], each[1], each[2], each[3]))
-                print('%d\t|%s\t|%s\t|%s\t|%d\t|%d' % (keyid, func, each[0], each[1], each[2], each[3]))
+                log.out.write('%s|%s|%s|%d|%d\n' % (each[3], each[0], each[1], each[2], each[4]))
+                print('%s\t|%s\t|%s\t|%d\t|%d' % (each[3], each[0], each[1], each[2], each[4]))
         else:
             print 'YG920 read failed.\n'
 
@@ -82,8 +81,7 @@ def lookup(keyid=23, timeout=1000):
 
 if __name__ == '__main__':
     try:
-        funcid = sys.argv[1:]
-        lookup(int(funcid[0]))
+        lookup2()
     except Exception, x:
         print 'usage: python irlookup.py keyid'
         print '    keyid - function key id (power := 23, chan_up := 15, vol_up := 13).\n'
