@@ -37,9 +37,9 @@ def get_func_by_type(cnx, dtype):
 
 def yg_fprint(log, freq, pulse):
     try:
-        th = ygutils.Listener(freq)
+        th = ygutils.Listener(freq, timeout=5.0)
         th.start()
-        time.sleep(2)
+        time.sleep(1)
 
         ir = str(freq) + ',' + pulse
         #log.write('send \"%s\".\n' % ir)
@@ -143,23 +143,27 @@ def check_codeset(log, cnx, fname, dtype, brand):
 
 
 def get_meta(filename):
-    meta = re.split(' |  |_', filename)
-    dtype = meta[0]
-    brand = meta[2]
-    return dtype, brand
+    meta = re.split(' |  |_|-', filename)
+    dtype = meta[0].lower()
+    if meta[1].isdigit():
+        brand = meta[2]
+    else:
+        brand = meta[1]
+
+    return dtype, brand.lower()
 
 
 def quarantine(path):
     log = irutils.Logger('qt')
     cnx = irutils.DBConnection()
-    log.out.write('Filename|Duplicate|All Brands|Key Tested|Similar\n')
+    log.out.write('Filename|Type|Brand|Duplicate|All Brands|Key Tested|Similar\n')
     try:
         for f in os.listdir(path):
             if f.lower().endswith(FILE_EXTENSION):
                 (t, b) = get_meta(os.path.splitext(f)[0])
                 log.write('\nchecking \"%s\" (type=%s, brand=%s)...\n' % (f, t, b))
-                log.out.write('%s|' % f)
-                (old, key_count) = check_codeset(log, cnx, os.path.join(path, f), t.lower(), b.lower())
+                log.out.write('%s|%s|%s|' % (f, t, b))
+                (old, key_count) = check_codeset(log, cnx, os.path.join(path, f), t, b)
                 if old:
                     log.bat.write('move \"%s\" \"%s\"\n' % (os.path.join(path, f), os.path.join(path, 'old')))
                     #os.rename(os.path.join(path, f), os.path.join(path, 'old/' + f))
