@@ -13,7 +13,7 @@ META_EXTENSION = '.meta'
 
 INNOTECH_PREFIX = 1000000
 
-device_type_id = {'tv': 1, 'stb': 2, 'dvd': 3, 'av': 5, 'smp': 6, 'prj': 10, 'ac': 18, 'vcr': 21}
+device_type_id = {'tv': 1, 'stb': 2, 'dvd': 3, 'av': 5, 'audio': 5, 'smp': 6, 'iptv mp': 6, 'prj': 10, 'ac': 18, 'vcr': 21}
 
 
 def get_brandid(cnx, brand):
@@ -55,13 +55,15 @@ def proc_meta(log, cnx, filename):
                 fields = each.split('|')
                 codeset = int(fields[1]) + INNOTECH_PREFIX
                 device = fields[2].lower()
-                brand = fields[5]
-                print codeset, device, brand
-                (codesetid, brandid) = assign_codesetid(cnx, device, brand, codeset)
-                if codesetid != 0:
-                    log.write('|%d|%d|%d\n' % (device_type_id[device], brandid, codesetid))
+                brands = fields[5].split(',')
+                #print codeset, device, brands
+                for brand in brands:
+                    print codeset, device, brand
+                    (codesetid, brandid) = assign_codesetid(cnx, device, brand, codeset)
+                    if codesetid != 0:
+                        log.write('|%d|%d|%d\n' % (device_type_id[device], brandid, codesetid))
             except Exception, e:
-                log.write('\nproc_meta:readlines:%s\n' % e)
+                log.write('\nproc_meta:readlines: %s\n' % e)
         f.close()
         log.log.flush()
 
