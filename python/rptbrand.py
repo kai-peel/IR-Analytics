@@ -3,7 +3,7 @@ __author__ = 'kai'
 import os
 from utils import irutils
 
-LOGFILE = 'list_of_brands_and_codeset_count.csv'
+LOGFILE = 'C:/Users/G50/Dropbox/Public/list_of_brands_and_codeset_count.csv'
 
 
 def report(cnx, log):
