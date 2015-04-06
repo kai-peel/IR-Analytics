@@ -1,9 +1,10 @@
 #!/usr/bin/python
 __author__ = 'kai'
 import os
+import codecs
 from utils import irutils
 
-LOGFILE = 'C:/Users/G50/Dropbox/Public/list_of_brands_and_codeset_count.csv'
+LOGFILE = 'C:/Users/G50/Dropbox/Public/list_of_stb_brands_and_ids.csv'
 
 
 def report(cnx, log):
@@ -26,7 +27,7 @@ def main():
         os.remove(LOGFILE)
     except OSError:
         pass
-    with open(LOGFILE, 'w') as f:
+    with codecs.open(LOGFILE, mode="w", encoding="utf-8") as f:
         cnx = irutils.DBConnection()
         f.write('BrandID,BrandName,CountryCode,Localization,CodesetCount\n')
         report(cnx, f)

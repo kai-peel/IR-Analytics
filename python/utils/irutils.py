@@ -16,7 +16,7 @@ IRDBSG = "54.254.101.29"  # staging
 class DBConnection:
     def __init__(self, host=IRDBV2, db="devices", user="zdbadmin", passwd="z3l4yi23"):
         try:
-            self.db = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+            self.db = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db, charset="utf8", use_unicode=True)
             self.cursor = self.db.cursor()
         except Exception, e:
             print "ERR:DBConnection:__init__: %s" % e
