@@ -5,7 +5,7 @@ import glob
 import sys
 import serial
 
-COMPORT = 'COM1'
+COMPORT = 'COM2'
 
 class IRUtilities(threading.Thread):
     isMac = False

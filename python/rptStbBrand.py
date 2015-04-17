@@ -10,8 +10,10 @@ LOGFILE = 'C:/Users/G50/Dropbox/Public/list_of_stb_brands_and_ids.csv'
 def report(cnx, log):
     try:
         query = ("select a.brandid, a.brandname, c.country, c.displayname, count(*) "
-                 "from brands a, codesets b, brandnames c "
-                 "where a.brandid=b.brandid and a.brandid=c.brandid and devicetypeid=2 and activeflag='Y' "
+                 "from brands a "
+                 "left join brandnames c on c.brandid=a.brandid "
+                 "join codesets b on a.brandid=b.brandid "
+                 "where devicetypeid=2 and activeflag='Y' "
                  "group by a.brandid, country order by brandname; ")
         cnx.cursor.execute(query)
         r = cnx.cursor.fetchall()

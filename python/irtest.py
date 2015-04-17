@@ -21,9 +21,9 @@ def main():
     csvfile = open(csvfilename, 'w')
     csvfile.write("ID,Code Type,")
     if __USE_GC__:
-        csvfile.write("[GC] Fail to Send,[GC] Pass,[GC] Freq Error(>%d),[GC] Pulse Error(>%d%%),[GC] Pulse Warning(>%d)," % (FREQ_ERR_SIZE, PULSE_ERR_RATIO, PULSE_ERR_SIZE))
+        csvfile.write("[GC] Fail to Send,[GC] Pass,[GC] Freq Error(>%d),[GC] Pulse Error(>%dp),[GC] Pulse Warning(>%d)," % (FREQ_ERR_SIZE, PULSE_ERR_RATIO, PULSE_ERR_SIZE))
     if __USE_YG__:
-        csvfile.write("[YG] Fail to Send,[YG] Pass,[YG] Pulse Error(>%d%%),[YG] Pulse Warning(>%d)" % (PULSE_ERR_RATIO, PULSE_ERR_SIZE))
+        csvfile.write("[YG] Fail to Send,[YG] Pass,[YG] Pulse Error(>%dp),[YG] Pulse Warning(>%d)" % (PULSE_ERR_RATIO, PULSE_ERR_SIZE))
     csvfile.write('\n')
     logfilename = "irt_%s.txt" % (timestampsuffix)
     logfile = open(logfilename, 'w')
@@ -57,8 +57,8 @@ def main():
                     cloudirrpt = uesdata["repeatframe"].split(" ")
                     if len(cloudirrpt) <= 1:
                         type = "Partial_Repeat"
-                    #cloudirdata = irutils.build_pulses(1, cloudirmain, cloudirrpt)
-                    cloudirdata = irutils.build_pulses(int(uesdata["repeatcount"]), cloudirmain, cloudirrpt)
+                    cloudirdata = irutils.build_pulses(1, cloudirmain, cloudirrpt)
+                    #cloudirdata = irutils.build_pulses(int(uesdata["repeatcount"]), cloudirmain, cloudirrpt)
                     csvfile.write(",%s" % type)
 
                     if __USE_GC__:
@@ -98,7 +98,7 @@ def main():
                             ygirdata = None
 
                     # wait for gc-irl closing serial port..
-                    time.sleep(1)
+                    #time.sleep(1)
                     print "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
 
                     if __USE_GC__:

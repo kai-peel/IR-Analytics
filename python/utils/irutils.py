@@ -58,7 +58,7 @@ class Logger:
     def __init__(self, tag):
         time_stamp_suffix = time.strftime("%Y%m%d%H%M%S")
         log_filename = "%s%s.log" % (tag, time_stamp_suffix)
-        out_filename = "%s%s.out" % (tag, time_stamp_suffix)
+        out_filename = "%s%s.txt" % (tag, time_stamp_suffix)
         bat_filename = "%s%s.bat" % (tag, time_stamp_suffix)
         self.log = open(log_filename, 'w')
         self.out = open(out_filename, 'w')
@@ -74,7 +74,7 @@ class Logger:
         self.bat.close()
 
     def write(self, b):
-        self.log.write(b)
+        self.log.write('%s\n' % b)
         print b
 
 
