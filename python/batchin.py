@@ -9,7 +9,6 @@ import re
 from utils import irutils
 
 FILE_EXTENSION = '.txt'
-FILE_EXTENSION2 = '.TXT'
 
 device_type_id = {'tv': 1, 'stb': 2, 'dvd': 3, 'av': 5, 'prj': 10, 'ac': 18}
 
@@ -28,7 +27,7 @@ def get_brandid(cnx, brand):
         return 0
 
 
-def assign_codesetid(cnx, device, brand):
+def assign_codesetid(cnx, device, brands):
     try:
         codesetid = (device_type_id[device] + 1) * 100000
         if codesetid > 700000:
@@ -38,13 +37,16 @@ def assign_codesetid(cnx, device, brand):
         row = cnx.cursor.fetchone()
         codesetid = row[0] + 1
 
-        brandid = get_brandid(cnx, brand)
-        if brandid <= 0:
+        blist = brands.split(',')
+        for each in blist:
+            brand = each.strip()
             brandid = get_brandid(cnx, brand)
+            if brandid <= 0:
+                brandid = get_brandid(cnx, brand)
 
-        query = ("INSERT INTO codesets VALUES (%d, %d, %d, 999, NULL, CURDATE(), 'Y') "
-                 % (brandid, device_type_id[device], codesetid))
-        cnx.cursor.execute(query)
+            query = ("INSERT INTO codesets VALUES (%d, %d, %d, 999, NULL, CURDATE(), 'Y') "
+                     % (brandid, device_type_id[device], codesetid))
+            cnx.cursor.execute(query)
         cnx.db.commit()
 
         return codesetid, brandid
@@ -56,9 +58,9 @@ def assign_codesetid(cnx, device, brand):
 
 def get_meta(filename):
     try:
-        meta = re.split(' |  |_', filename)
+        meta = re.split('_', filename)
         device = meta[0].lower()
-        brand = meta[2].lower()
+        brand = meta[1]  # .lower()
         return device, brand
     except Exception, e:
         print('print_meta:%s' % e)
@@ -84,7 +86,7 @@ def batch_insert(path):
     try:
         for f in os.listdir(path):
             print f
-            if f.endswith(FILE_EXTENSION) or f.endswith(FILE_EXTENSION2):
+            if f.lower().endswith(FILE_EXTENSION):
                 (t, b) = get_meta(os.path.splitext(f)[0])
                 (codesetid, brandid) = assign_codesetid(cnx, t, b)
                 log.write('%s|%d|%d|%d\n' % (f, device_type_id[t], brandid, codesetid))

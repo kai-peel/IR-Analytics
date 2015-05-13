@@ -1,7 +1,7 @@
 #!/usr/bin/python
 __author__ = 'kai'
 __version__ = '1.0'
-__date__ = '5-Mar-2015'
+__date__ = '16-Apr-2015'
 
 import sys
 import os
@@ -9,27 +9,11 @@ import re
 from utils import irutils
 
 DATAFILE_ID = 'IrData'
-METAFILE_ID = 'IrMeta'
+METAFILE_ID = 'Meta'
 
 INNOTECH_PREFIX = 1000000
 
-device_type_id = {'tv': 1, 'tv dvd': 1,
-                  'stb': 2, 'iptv': 2, 'iptv stb': 2, 'iptv dvr': 2, 'dvr': 2, 'cbl': 2, 'sat': 2, 'sat pvr': 2,
-                  'pvr+cbl': 2, 'pvr': 2, 'cbl dvr': 2, 'edvb': 2, 'media server': 2, 'pc media server': 2,
-                  'stb sat': 2, 'stb+dvr': 2,
-                  'dvd': 3, 'video processor': 3,
-                  'bd': 4, 'bd dvd': 4, 'blu-ray': 4, 'blu-ray dvd': 4, 'dvd+blu-ray': 4,
-                  'av': 5, 'avr': 5, 'aud': 5, 'audio': 5, 'soundbar': 5, 'aud cd': 5, 'aud+switch': 5, 'cd+aud': 5,
-                  'ht': 5,
-                  'smp': 6, 'media player': 6, 'iptv mp': 6, 'pc tv': 6,
-                  'prj': 10, 'proj': 10,
-                  'aud bluray': 14,
-                  'dvi switch': 15, 'hdmi switch': 15, 'matrix switch': 15, 'home': 15, 'home+camera': 15,
-                  'home+light': 16,
-                  'ac': 18,
-                  'cd': 19, 'ld': 19, 'tuner': 19,
-                  'vcr': 21
-                  }
+device_type_id = {'tv': 1, 'stb': 2, 'dvd': 3, 'av': 5, 'audio': 5, 'smp': 6, 'iptv mp': 6, 'prj': 10, 'ac': 18, 'vcr': 21}
 
 
 def get_brandid(cnx, brand):
@@ -46,18 +30,15 @@ def get_brandid(cnx, brand):
         return 0
 
 
-def assign_codesetid(cnx, devices, brand, codesetid):
-    brandid = -1
+def assign_codesetid(cnx, device, brand, codesetid):
     try:
-        dlist = devices.split(',')
-        for each in dlist:
-            device = each.strip()
+        brandid = get_brandid(cnx, brand)
+        if brandid <= 0:
             brandid = get_brandid(cnx, brand)
-            if brandid <= 0:
-                brandid = get_brandid(cnx, brand)
-            query = ("INSERT INTO codesets VALUES (%d, %d, %d, 999, NULL, CURDATE(), 'Y') "
-                     % (brandid, device_type_id[device], codesetid))
-            cnx.cursor.execute(query)
+
+        query = ("INSERT INTO codesets VALUES (%d, %d, %d, 999, NULL, CURDATE(), 'Y') "
+                 % (brandid, device_type_id[device], codesetid))
+        cnx.cursor.execute(query)
         cnx.db.commit()
         return codesetid, brandid
 
@@ -68,32 +49,24 @@ def assign_codesetid(cnx, devices, brand, codesetid):
 
 def proc_meta(log, cnx, filename):
     with open(filename, 'r') as f:
+        rnum = 0
+        rdate = ''
         content = f.readlines()
         for each in content:
             try:
                 fields = each.split('|')
-                codeset = int(fields[1]) + INNOTECH_PREFIX
-                device = fields[2].lower()
-                if len(fields[5]) > 0:
-                    brandlist = fields[5]
-                elif len(fields[4]) > 0:
-                    brandlist = fields[4]
-                elif len(fields[3]) > 0:
-                    brandlist = fields[3]
-                else:
-                    continue
-                brands = brandlist.split(',')
-                #print codeset, device, brands
-                for each in brands:
-                    brand = each.strip()
-                    print codeset, device, brand
-                    (codesetid, brandid) = assign_codesetid(cnx, device, brand, codeset)
-                    if codesetid != 0:
-                        log.write('|%d|%d|%d\n' % (device_type_id[device], brandid, codesetid))
+                if fields[0].lower().find('release') > -1:
+                    #rel = re.split(' \t\n', fields[0])
+                    rel = re.split(r'[;, \t\s]\s*', fields[0])
+                    #rel = fields[0].split(' ')
+                    rnum = int(rel[1])
+                    rdate = rel[2].strip()
+                elif fields[1].isdigit():
+                    log.out.write('%s|%d|%s\n' % (each.rstrip(), rnum, rdate))
             except Exception, e:
                 log.write('\nproc_meta:readlines: %s\n' % e)
         f.close()
-        log.log.flush()
+        log.out.flush()
 
 
 def proc_data(log, filename):
@@ -117,9 +90,9 @@ def proc_data(log, filename):
 
 
 def innotech(path):
-    log = irutils.Logger('int')
+    log = irutils.Logger('md')
     cnx = irutils.DBConnection()
-    log.write('Filename|Type|Brand|Codeset\n')
+    log.out.write('Encoded category|Codeset|Category by name|Region|Provider|Brand|Remote|Model|Descriptor|Release|Date\n')
     try:
         for f in os.listdir(path):
             print f

@@ -57,7 +57,7 @@ def get_meta(filename):
     try:
         meta = re.split(' |  |_', filename)
         device = meta[0].lower()
-        brand = meta[1].lower()
+        brand = meta[1] #.lower()
         return device, brand
     except Exception, e:
         print('get_meta:%s' % e)

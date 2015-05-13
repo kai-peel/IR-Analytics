@@ -5,6 +5,31 @@ __date__ = "05-DEC-2014"
 from utils import irutils
 
 
+def clean_brandtypemap(log, cnx):
+    query = ("SELECT a.brandid, a.devicetypeid from brandtypemap a "
+             "LEFT JOIN codesets b on a.brandid=b.brandid and a.devicetypeid=b.devicetypeid and activeflag='Y' "
+             "WHERE b.codesetid IS NULL AND a.devicetypeid < 100 "
+             "GROUP BY a.brandid, a.devicetypeid ")
+    try:
+        cnx.cursor.execute(query)
+        btmap = cnx.cursor.fetchall()
+        do_commit = False
+        for each in btmap:
+            log.write("deleting brandid=%d and devicetypeid=%d..." % (each[0], each[1]))
+            query = ("DELETE FROM brandtypemap "
+                     "WHERE brandid=%d AND devicetypeid=%d "
+                     % (each[0], each[1]))
+            try:
+                cnx.cursor.execute(query)
+                do_commit = True
+            except Exception, e:
+                print e
+        if do_commit:
+            cnx.db.commit()
+    except Exception, e:
+        print "ERR:clean_brandtypemap:%s." % e
+
+
 ##  @fn
 #   @brief
 #
@@ -42,7 +67,7 @@ def main():
     log = irutils.Logger("btm")
     cnx = irutils.DBConnection()
     get_devicetypes(log, cnx)
-
+    clean_brandtypemap(log, cnx)
 
 if __name__ == '__main__':
     main()

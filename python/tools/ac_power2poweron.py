@@ -29,6 +29,24 @@ def mv_P_to_PO(cnx, codesetid):
                 cnx.cursor.execute(query)
             except Exception, e:
                 print e
+            return uescode[0]
+        else:
+            return -1
+    except Exception, e:
+        print e
+
+
+def copy_uesidfunc(cnx, codesetid, dest, src):
+    #src = 6216  # '26_F_A_C=6216'
+    #dest = 332  # 'PowerOn'
+    query = ("INSERT INTO uesidfunctionmap (uesid, codesetid, functionid, origfunctionid, updateddate, activeflag) "
+             "SELECT uesid, codesetid, %d, origfunctionid, updateddate, activeflag "
+             "FROM uesidfunctionmap "
+             "WHERE activeflag = 'Y' AND codesetid = %d "
+             "AND functionid = %d " % (dest, codesetid, src))
+    #print query
+    try:
+        cnx.cursor.execute(query)
     except Exception, e:
         print e
 
@@ -37,10 +55,10 @@ def main():
     log = ir.Logger("pwr")
     cnx = ir.DBConnection()
 
-    # find a/c codes id as "brute force" 20_F_A_C=6210, but no associated a/c code PowerOn=332.
+    # find a/c codes id as "brute force" 26_F_A_C=6216, but no associated a/c code PowerOn=332.
     query = ("SELECT DISTINCT m.codesetid from uesidfunctionmap m "
              "JOIN codesets s ON s.codesetid = m.codesetid "
-             "WHERE m.functionid = 6210 "
+             "WHERE m.functionid = 6216 "
              "AND m.activeflag='Y' AND s.activeflag = 'Y' "
              "AND m.codesetid NOT IN "
              "(SELECT DISTINCT codesetid FROM uesidfunctionmap "
@@ -50,7 +68,9 @@ def main():
         codesets = cnx.cursor.fetchall()
         for codesetid in codesets:
             log.write("processing codesetid %d..." % codesetid[0])
-            mv_P_to_PO(cnx, codesetid[0])
+            uesid = mv_P_to_PO(cnx, codesetid[0])
+            if uesid < 0:
+                copy_uesidfunc(cnx, codesetid[0], 332, 6216)
         cnx.db.commit()
     except Exception, e:
         print e
