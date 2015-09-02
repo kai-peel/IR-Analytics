@@ -4,14 +4,15 @@ __version__ = '1.0'
 __date__ = '31-Aug-2015'
 from utils import irutils as ir
 
-SEPARATOR = 700  # gap threshold (20 ms / 35 kHz) between frames.
+SEPARATOR = 0.020  # gap threshold (in sec) between frames.
 EMARGIN = 3  # margin of error tolerance in pulse count.
-PMARGIN = 0.20  # margin of error tolerance in percentage.
+PMARGIN = 0.25  # margin of error tolerance in percentage.
 
 
-def diff(frame1, frame2):
+def diff(log, frame1, frame2):
     try:
         # ignore the size difference, for now.
+        log.out.write("%d," % (len(frame1) - len(frame2)))
         length = min(len(frame1), len(frame2))
         for i in xrange(length-1):
             if abs(frame1[i] - frame2[i]) > EMARGIN:
@@ -24,11 +25,11 @@ def diff(frame1, frame2):
         print e
 
 
-def if_partial_repeat(frames):
+def if_partial_repeat(log, frames):
     try:
         frame1 = frames[1]
         for i in xrange(2, len(frames)):
-            if not diff(frame1, frames[i]):
+            if not diff(log, frame1, frames[i]):
                 return False
         return True
 
@@ -36,20 +37,20 @@ def if_partial_repeat(frames):
         print e
 
 
-def if_full_repeat(frames):
+def if_full_repeat(log, frames):
     try:
-        return diff(frames[0], frames[1])
-
+        return diff(log, frames[0], frames[1])
     except Exception, e:
         print e
 
 
-def segmentation(array):
+def segmentation(array, freq):
     try:
         frames = []
         head = 0
+        spacer = freq * SEPARATOR
         for i in xrange(0, len(array), 2):
-            if array[i+1] >= SEPARATOR:
+            if array[i+1] >= spacer:
                 frames.append(array[head:i+2])
                 head = i + 2
         return frames
@@ -58,7 +59,7 @@ def segmentation(array):
         print e
 
 
-def pulses_from_uesid(log, cnx, codesetid, uesid):
+def pulses_from_uesid(log, cnx, codesetid, uesid, freq):
     try:
         query = ("SELECT pulse FROM uespulses WHERE uesid=%d AND frame='M' ORDER BY seq;"
                  % uesid)
@@ -68,20 +69,21 @@ def pulses_from_uesid(log, cnx, codesetid, uesid):
         for row in results:
             pulses.append(row[0])
 
-        frames = segmentation(pulses)
+        frames = segmentation(pulses, freq)
         log.out.write('%d|%d|' % (len(pulses), len(frames)))  # frames count
-        print("checking %d-%d[%d]: %d frames." % (codesetid, uesid, len(pulses), len(frames)))
+        print("checking set:%d id:%d[%d] (freq=%d): %d frames." % (codesetid, uesid, len(pulses), freq, len(frames)))
 
         if len(frames) < 2:
-            log.out.write('False|False\n')
+            log.out.write('|False||False\n')
             return  # single frame
 
         is_partial_repeat = '-'
         if len(frames) > 2:
-            is_partial_repeat = if_partial_repeat(frames)
-        is_full_repeat = if_full_repeat(frames)
+            is_partial_repeat = if_partial_repeat(log, frames)
+        log.out.write("|%s|" % is_partial_repeat)
 
-        log.out.write('%s|%s\n' % (is_partial_repeat, is_full_repeat))
+        is_full_repeat = if_full_repeat(log, frames)
+        log.out.write("|%s\n" % is_full_repeat)
 
     except Exception, e:
         print e
@@ -89,18 +91,18 @@ def pulses_from_uesid(log, cnx, codesetid, uesid):
 
 def main():
     log = ir.Logger("mrr")
-    log.out.write('CodesetID|UESID|Array Size|Frame Count|Partial Repeat|Full Repeat\n')
+    log.out.write('CodesetID|UESID|Freqency|Array Size|Frame Count|Partial Repeat|Full Repeat\n')
     cnx = ir.DBConnection()
     try:
-        query = ("SELECT DISTINCT a.uesid, b.codesetid FROM uespulses a, uesidfunctionmap b, codesets c "
-                 "WHERE a.uesid=b.uesid AND b.codesetid=c.codesetid "
+        query = ("SELECT DISTINCT a.uesid, b.codesetid, d.frequency FROM uespulses a, uesidfunctionmap b, codesets c, uescodes d "
+                 "WHERE a.uesid=b.uesid AND b.codesetid=c.codesetid AND b.uesid=d.uesid "
                  "AND b.activeflag='Y' and c.activeflag='Y' "
-                 "AND a.seq=300 and a.frame='M' ; ")
+                 "AND a.seq=300 and a.frame='M' LIMIT 3; ")
         cnx.cursor.execute(query)
         results = cnx.cursor.fetchall()
         for row in results:
-            log.out.write("%d|%d|" % (row[1], row[0]))
-            pulses_from_uesid(log, cnx, row[1], row[0])
+            log.out.write("%d|%d|%d|" % (row[1], row[0], row[2]))
+            pulses_from_uesid(log, cnx, row[1], row[0], row[2])
 
     except Exception, e:
         print e

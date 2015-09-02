@@ -6,6 +6,7 @@ import ctypes.wintypes
 import threading
 import time
 import numpy as np
+import math
 
 IR_OFFICE_APP = "IR Office"
 IR_READER_APP = "IRReader"
@@ -23,6 +24,7 @@ WORKMODE_WIDE = 1
 WORKMODE_NOCARRIER = 2
 WORKMODE_CARRIER = 3
 WORKMODE_56K = 4
+
 
 class IRDATA(ctypes.Structure):
     _fields_ = [
@@ -48,14 +50,18 @@ class COPYDATASTRUCT(ctypes.Structure):
     ]
 PCOPYDATASTRUCT = ctypes.POINTER(COPYDATASTRUCT)
 
+
 class StaticParam():
     key_seq = 0
+
     def __init__(self):
         pass
+
 
 class Listener():
     hWnd = None
     input = None
+
     def __init__(self):
 #         threading.Thread.__init__(self)
         self.data_type = None
@@ -104,7 +110,6 @@ class Listener():
 
         win32gui.DestroyWindow(Listener.hWnd)
         win32gui.UnregisterClass(classAtom, hinst)
-        
 
     def OnCopyData(self, hwnd, msg, wparam, lparam):
         try:
@@ -138,7 +143,25 @@ class Listener():
         print "Listener timeout..."
         win32gui.PostMessage(Listener.hWnd, win32con.WM_QUIT, 0, 0)
 
-    def decode_yg920(self, fmt, len, buf):
+    def msec2pulse_np(self, freq, length, buf):
+        f = freq / 10000000.0
+        #print "factor: ", f
+        iterable = (int(buf[x] * f) for x in range(length))
+        self.data_wave_buf = np.fromiter(iterable, np.int)
+        #return self.data_wave_buf
+
+    def msec2pulse(self, freq, length, buf):
+        data_wave_buf = []
+        for x in range(0, length, 2):
+            pair = int(float((buf[x] + buf[x+1]) * freq) / 10000000.0)
+            # "on" distorted by power amplification.
+            on = math.floor(float(buf[x] * freq) / 10000000.0)
+            data_wave_buf.extend([on, pair - on])
+        return data_wave_buf
+
+    def decode_yg920(self, fmt, length, buf):
+        # based on observation, capture might be more accurate if converted as 38k/56k.
+        # fine tune to measured frequency afterward with converted pulse count.
         self.data_wave_freq = 38000
         e = fmt.find("K)")
         if e > 0:
@@ -148,13 +171,8 @@ class Listener():
             if e > 0:
                 self.data_wave_freq = int(float(fmt[fmt.find("(")+1:e]) * 1000)
 
-        f = self.data_wave_freq / 10000000.0
-        #print "factor: ", f
-        iterable = (int(buf[x] * f) for x in range(len))
-        self.data_wave_buf = np.fromiter(iterable, np.int)
-        #for x in range(len):
-        #    print buf[x]
-        #    self.data_wave_buf.append(buf[x])
+        self.msec2pulse_np(self.data_wave_freq, length, buf)
+        self.msec2pulse(self.data_wave_freq, length, buf)
 
 
 def find_window(window_name):
@@ -179,6 +197,7 @@ def find_analyzer():
     #print "IR analyzer is NOT running!" % APP_NAME
     return None
 
+
 def onFireEnter():
     while True:
         try:
@@ -190,5 +209,5 @@ def onFireEnter():
                 print "record again"
                 StaticParam.key_seq = StaticParam.key_seq - 1
                 win32gui.PostMessage(Listener.hWnd, win32con.WM_QUIT, 0, 0)
-        except:
-            print
+        except Exception, e:
+            print e
