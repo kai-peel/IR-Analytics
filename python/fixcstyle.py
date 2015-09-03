@@ -49,14 +49,15 @@ def segmentation(array, freq):
         frames = []
         head = 0
         spacer = freq * SEPARATOR
-        for i in xrange(0, len(array), 2):
+        length = (len(array) / 2) * 2  # safeguard for odd size array.
+        for i in xrange(0, length, 2):
             if array[i+1] >= spacer:
                 frames.append(array[head:i+2])
                 head = i + 2
         return frames
 
     except Exception, e:
-        print e
+        print "exp:segmentation:%s" % e
 
 
 def pulses_from_uesid(log, cnx, codesetid, uesid, freq):
@@ -92,17 +93,19 @@ def pulses_from_uesid(log, cnx, codesetid, uesid, freq):
 def main():
     log = ir.Logger("mrr")
     log.out.write('CodesetID|UESID|Freqency|Array Size|Frame Count|Partial Repeat|Full Repeat\n')
-    cnx = ir.DBConnection()
+    #cnx = ir.DBConnection()
+    cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     try:
         query = ("SELECT DISTINCT a.uesid, b.codesetid, d.frequency FROM uespulses a, uesidfunctionmap b, codesets c, uescodes d "
                  "WHERE a.uesid=b.uesid AND b.codesetid=c.codesetid AND b.uesid=d.uesid "
                  "AND b.activeflag='Y' and c.activeflag='Y' "
-                 "AND a.seq=300 and a.frame='M' LIMIT 3; ")
+                 "AND a.seq=300 and a.frame='M'; ")
         cnx.cursor.execute(query)
         results = cnx.cursor.fetchall()
         for row in results:
             log.out.write("%d|%d|%d|" % (row[1], row[0], row[2]))
             pulses_from_uesid(log, cnx, row[1], row[0], row[2])
+            log.out.flush()
 
     except Exception, e:
         print e
@@ -111,12 +114,12 @@ def main():
 def test():
     log = ir.Logger("mrr")
     log.out.write('CodesetID|UESID|Freqency|Array Size|Frame Count|Partial Repeat|Full Repeat\n')
-    cnx = ir.DBConnection()
-
+    #cnx = ir.DBConnection()
+    cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     log.out.write("%d|%d|%d|" % (691005, 473096, 38000))
     pulses_from_uesid(log, cnx, 691005, 473096, 38000)
 
 
 if __name__ == '__main__':
-    #main()
-    test()
+    main()
+    #test()
