@@ -107,5 +107,16 @@ def main():
     except Exception, e:
         print e
 
+
+def test():
+    log = ir.Logger("mrr")
+    log.out.write('CodesetID|UESID|Freqency|Array Size|Frame Count|Partial Repeat|Full Repeat\n')
+    cnx = ir.DBConnection()
+
+    log.out.write("%d|%d|%d|" % (691005, 473096, 38000))
+    pulses_from_uesid(log, cnx, 691005, 473096, 38000)
+
+
 if __name__ == '__main__':
-    main()
+    #main()
+    test()
