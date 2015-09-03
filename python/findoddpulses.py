@@ -42,7 +42,7 @@ def main():
     cnx = ir.DBConnection()
     try:
         query = ("SELECT DISTINCT a.uesid, b.codesetid FROM uesidfunctionmap a, codesets b "
-                 "WHERE a.uesid=b.uesid "
+                 "WHERE a.codesetid=b.codesetid "
                  "AND a.activeflag='Y' and b.activeflag='Y' "
                  "GROUP BY a.uesid; ")
         cnx.cursor.execute(query)
@@ -62,5 +62,5 @@ def test():
 
 
 if __name__ == '__main__':
-    #main()
-    test()
+    main()
+    #test()
