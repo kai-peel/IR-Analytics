@@ -6,7 +6,7 @@ def main():
     try:
         res = ir.get_ir_stream2(181946)
         print json.dumps(res, indent=4, sort_keys=True)
-
+        print "========================================================================================================================"
         res = ir.get_ir_codeset(1004194)
         print json.dumps(res, indent=4, sort_keys=True)
 

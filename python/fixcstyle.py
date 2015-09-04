@@ -9,6 +9,28 @@ EMARGIN = 3  # margin of error tolerance in pulse count.
 PMARGIN = 0.20  # margin of error tolerance in percentage.
 
 
+def remove_full_repeats(cnx, uesid, frames, repeats):
+    try:
+        length = len(frames[0])
+        query = ("UPDATE uespulses "
+                 "SET frame = 'X' "
+                 "WHERE uesid = %d AND seq >= %d; " %
+                 (uesid, length))
+        cnx.cursor.execute(query)
+        #cnx.db.commit()
+
+        repeats = min(len(frames) * repeats, 3)
+        query = ("UPDATE uescodes "
+                 "SET codetype = 'Full_Repeat', repeatcount = %d "
+                 "WHERE uesid = %d; " %
+                 (repeats, uesid))
+        cnx.cursor.execute(query)
+        cnx.db.commit()
+
+    except Exception, e:
+        print e
+
+
 def diff(log, frame1, frame2, exact=True):
     try:
         log.out.write("%d," % (len(frame1) - len(frame2)))
@@ -62,7 +84,7 @@ def segmentation(array, freq):
         print "exp:segmentation:%s" % e
 
 
-def pulses_from_uesid(log, cnx, codesetid, uesid, freq):
+def pulses_from_uesid(log, cnx, codesetid, uesid, freq, repeats):
     try:
         query = ("SELECT pulse FROM uespulses WHERE uesid=%d AND frame='M' ORDER BY seq;"
                  % uesid)
@@ -88,7 +110,8 @@ def pulses_from_uesid(log, cnx, codesetid, uesid, freq):
         is_full_repeat = if_full_repeat(log, frames)
         log.out.write("|%s\n" % is_full_repeat)
 
-        if is_full_repeat:
+        if is_partial_repeat and is_full_repeat:
+            remove_full_repeats(cnx, uesid, frames, repeats)
 
     except Exception, e:
         print e
@@ -100,7 +123,7 @@ def main():
     #cnx = ir.DBConnection()
     cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     try:
-        query = ("SELECT a.uesid, b.codesetid, d.frequency FROM uespulses a "
+        query = ("SELECT a.uesid, b.codesetid, d.frequency, d.repeatcount FROM uespulses a "
                  "JOIN uesidfunctionmap b ON a.uesid=b.uesid "
                  "JOIN codesets c ON b.codesetid=c.codesetid "
                  "JOIN uescodes d ON b.uesid=d.uesid "
@@ -111,7 +134,7 @@ def main():
         results = cnx.cursor.fetchall()
         for row in results:
             log.out.write("%d|%d|%d|" % (row[1], row[0], row[2]))
-            pulses_from_uesid(log, cnx, row[1], row[0], row[2])
+            pulses_from_uesid(log, cnx, row[1], row[0], row[2], row[3])
             log.out.flush()
 
     except Exception, e:
@@ -121,12 +144,12 @@ def main():
 def test():
     log = ir.Logger("mrr")
     log.out.write('CodesetID|UESID|Freqency|Array Size|Frame Count|Partial Repeat|Full Repeat\n')
-    #cnx = ir.DBConnection()
-    cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
+    cnx = ir.DBConnection()
+    #cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     #log.out.write("%d|%d|%d|" % (691005, 473096, 38000))
     #pulses_from_uesid(log, cnx, 691005, 473096, 38000)
-    log.out.write("%d|%d|%d|" % (1004194, 181972, 36000))
-    pulses_from_uesid(log, cnx, 1004194, 181972, 36000)
+    log.out.write("%d|%d|%d|" % (1004194, 181946, 36000))
+    pulses_from_uesid(log, cnx, 1004194, 181946, 36000, 3)
 
 
 if __name__ == '__main__':
