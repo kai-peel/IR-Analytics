@@ -8,6 +8,10 @@ import MySQLdb
 import datetime
 import pexpect
 import os
+from email.utils import formatdate
+from hashlib import sha1
+import hmac
+
 IRDBV1 = "175.41.143.31"  # production
 IRDBV2 = "54.251.240.47"  # secured production
 IRDBSG = "54.254.101.29"  # staging
@@ -90,11 +94,64 @@ def get_ir_stream(uesid):
         print "ERR:get_ir_stream: %s" % e
         return None
 
+gatewayBaseUrl = "https://gateway.peel-prod.com"
+gatewayChinaBaseUrl = "https://gateway.peelchina.com"
+baseUrl = "https://partners-ir.peel-prod.com"
+authApiKey = "c583c7c46eef455992a6846c81573f02"  # Auth Key
+authApiSecret = "6f5d1afa224b4b2c93666d1405795725"  # Auth Secret
 
-def get_ir_stream2(uesid):
-    headers = {'User-Agent': "Peel"}
-    req = "http://partners-ir.peel.com/targets/uesid/%d" % uesid
+
+def get_ir_stream2(uesid, langcode="en", userid="162077214", tid="e19457168fc0728e40f83887a7a88bd95e39ea56"):
     try:
+        """
+        Authorization: "Peel" + " " + PeelAPIKey + ":" + Signature
+        Signature = Base64( HMAC-SHA1( UTF-8-Encoding-Of( SecretAccessKey, StringToSign ) ) )
+        StringToSign = HTTP-Method + "\n" + Content-Type + "\n" + Date + "\n" + Resource
+        HTTP-Method = <HTTP method, e.g., "GET", "POST">
+        Content-Type = <Value of HTTP Content-Type header>
+        Date = <Value of HTTP Date header>
+        Resource = <HTTP-Path of request, e.g, "/tvdb/search/shows", etc.>
+        """
+        # Peel c583c7c46eef455992a6846c81573f02:uOMrHXuMWX0KBzInZ7wUpv6GVcM=
+        resource = "/targets/v2/uesid/%d" % uesid
+        http_date = ""  # formatdate(timeval=None, localtime=False, usegmt=True)
+        content_type = ""  # "application/json"
+        http_method = "GET"
+        string2sign = "%s\n%s\n%s\n%s" % (http_method, content_type, http_date, resource)
+        hashed = hmac.new(authApiSecret, string2sign, sha1)
+        signature = hashed.digest().encode("base64").rstrip('\n')
+        headers = {'User-Agent': "Peel", 'Authorization': "Peel %s:%s" % (authApiKey, signature)}
+        req = ("%s%s?langcode=%s&userid=%s&tid=%s" % (baseUrl, resource, langcode, userid, tid))
+        request = urllib2.Request(req, headers=headers)
+        response = urllib2.urlopen(request)
+        uesdata = simplejson.loads(response.read())
+        return uesdata
+    except Exception, e:
+        print "ERR:get_ir_stream: %s" % e
+        return None
+
+
+def get_ir_codeset(codesetid, langcode="en", userid="162077214", tid="e19457168fc0728e40f83887a7a88bd95e39ea56"):
+    try:
+        """
+        Authorization: "Peel" + " " + PeelAPIKey + ":" + Signature
+        Signature = Base64( HMAC-SHA1( UTF-8-Encoding-Of( SecretAccessKey, StringToSign ) ) )
+        StringToSign = HTTP-Method + "\n" + Content-Type + "\n" + Date + "\n" + Resource
+        HTTP-Method = <HTTP method, e.g., "GET", "POST">
+        Content-Type = <Value of HTTP Content-Type header>
+        Date = <Value of HTTP Date header>
+        Resource = <HTTP-Path of request, e.g, "/tvdb/search/shows", etc.>
+        """
+        # Peel c583c7c46eef455992a6846c81573f02:uOMrHXuMWX0KBzInZ7wUpv6GVcM=
+        resource = "/targets/v2/uesid/uesidsforcodeset/%d" % codesetid
+        http_date = ""  # formatdate(timeval=None, localtime=False, usegmt=True)
+        content_type = ""  # "application/json"
+        http_method = "GET"
+        string2sign = "%s\n%s\n%s\n%s" % (http_method, content_type, http_date, resource)
+        hashed = hmac.new(authApiSecret, string2sign, sha1)
+        signature = hashed.digest().encode("base64").rstrip('\n')
+        headers = {'User-Agent': "Peel", 'Authorization': "Peel %s:%s" % (authApiKey, signature)}
+        req = ("%s%s?langcode=%s&userid=%s&tid=%s" % (baseUrl, resource, langcode, userid, tid))
         request = urllib2.Request(req, headers=headers)
         response = urllib2.urlopen(request)
         uesdata = simplejson.loads(response.read())

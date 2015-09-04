@@ -345,7 +345,7 @@ if __name__ == '__main__':
     cnx = DBConnection()
     #cnx = DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
 
-    brands = [42] #, 87, 64, 74, 23, 30, 37, 69, 32, 57, 31, 36, 80, 24, 179, 41, 86, 165, 76, 197, 196, 283, 75, 38, 169, 78, 46, 82, 580, 172, 22, 222, 176, 200, 207, 166, 244, 560, 77, 7, 193, 173, 175, 25, 224, 148, 182, 72, 243, 185, 167, 187, 168, 251, 572, 50, 84, 139, 273, 27, 178, 230, 66, 163, 678, 1856, 164, 208, 302, 184, 2071, 304, 211, 246, 188, 39, 213, 255, 561, 192, 79, 171, 258, 20, 195, 267, 270, 619, 58, 177, 324, 625, 1832, 206, 419, 642, 1849, 238, 293, 490, 240, 507, 703, 1942, 209, 303, 528, 773, 210, 532, 777, 2519, 305, 545, 1183, 2551, 4, 212, 306, 1313, 2556, 6, 191, 307, 1323, 2559, 170, 217, 257, 309, 571, 1327, 2645, 9, 218, 311, 1337, 2647, 11, 44, 194, 219, 264, 312, 576, 1505, 220, 313, 577, 1596, 174, 221, 269, 314, 1747, 56, 315, 584, 1782, 198, 223, 271, 321, 1828]
+    brands = [17] #, 87, 64, 74, 23, 30, 37, 69, 32, 57, 31, 36, 80, 24, 179, 41, 86, 165, 76, 197, 196, 283, 75, 38, 169, 78, 46, 82, 580, 172, 22, 222, 176, 200, 207, 166, 244, 560, 77, 7, 193, 173, 175, 25, 224, 148, 182, 72, 243, 185, 167, 187, 168, 251, 572, 50, 84, 139, 273, 27, 178, 230, 66, 163, 678, 1856, 164, 208, 302, 184, 2071, 304, 211, 246, 188, 39, 213, 255, 561, 192, 79, 171, 258, 20, 195, 267, 270, 619, 58, 177, 324, 625, 1832, 206, 419, 642, 1849, 238, 293, 490, 240, 507, 703, 1942, 209, 303, 528, 773, 210, 532, 777, 2519, 305, 545, 1183, 2551, 4, 212, 306, 1313, 2556, 6, 191, 307, 1323, 2559, 170, 217, 257, 309, 571, 1327, 2645, 9, 218, 311, 1337, 2647, 11, 44, 194, 219, 264, 312, 576, 1505, 220, 313, 577, 1596, 174, 221, 269, 314, 1747, 56, 315, 584, 1782, 198, 223, 271, 321, 1828]
     for brandid in brands:
         print '\n', brandid
         # 1st Level:
@@ -358,7 +358,7 @@ if __name__ == '__main__':
 
         # function (power) chosen by api logic.
         #level1(cnx, 5, 45, 'CN', 23)  # check for power only, china localized.
-        level1 = level1_multi(cnx, 1, brandid, 'CN', [23, 332])  # check for both power and poweron, global.
+        level1 = level1_multi(cnx, 18, brandid, None, [23, 332])  # check for both power and poweron, global.
 
         # These are the functions verifying in disambiguate api response for level2 and above
         # if devicetypeid=1 then functions to assert is any one in this list
@@ -368,8 +368,8 @@ if __name__ == '__main__':
         # http://ec2-54-251-11-99.ap-southeast-1.compute.amazonaws.com:8080/targets/v2/disambiguate?devicetypeid=1&brandid=45&qstring=23_111100101010000011010101xF2A0D5x&country=CN&userid=821390208&tid=9560cb7161b9ca340b9e0279a5c4d9a3ba0ccffd
         # authorization: Peel c583c7c46eef455992a6846c81573f02:loO0ZUR7N9VsEeGr5mFWHIsOZNo=
         # functionid chosen by api logic.
-        for each in level1:
-            level2(cnx, 1, brandid, 'CN', each[2], each[3], 13)  # check for power only, china localized.
+#        for each in level1:
+#            level2(cnx, 1, brandid, 'CN', each[2], each[3], 13)  # check for power only, china localized.
         #level2(cnx, 1, 45, None, 23, '111100101010000011010101xF2A0D5x', 27)  # check for power only, global.
         #level2(cnx, 1, 254, 'CN', 23, '11000000001100x000Cx', 27)
         #level3(cnx, 1, 254, 'CN', 23, '11000000001100x000Cx', 27, '11000000101110x002Ex', 13)
