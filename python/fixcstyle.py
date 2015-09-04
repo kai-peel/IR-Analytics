@@ -6,13 +6,15 @@ from utils import irutils as ir
 
 SEPARATOR = 0.020  # gap threshold (in sec) between frames.
 EMARGIN = 3  # margin of error tolerance in pulse count.
-PMARGIN = 0.25  # margin of error tolerance in percentage.
+PMARGIN = 0.20  # margin of error tolerance in percentage.
 
 
-def diff(log, frame1, frame2):
+def diff(log, frame1, frame2, exact=True):
     try:
-        # ignore the size difference, for now.
         log.out.write("%d," % (len(frame1) - len(frame2)))
+        if exact and len(frame1) != len(frame2):
+            return False
+        # ignore the size difference, for now.
         length = min(len(frame1), len(frame2))
         for i in xrange(length-1):
             if abs(frame1[i] - frame2[i]) > EMARGIN:
@@ -48,7 +50,7 @@ def segmentation(array, freq):
     try:
         frames = []
         head = 0
-        spacer = freq * SEPARATOR
+        spacer = min(SEPARATOR * freq, 1000)
         length = (len(array) / 2) * 2  # safeguard for odd size array.
         for i in xrange(0, length, 2):
             if array[i+1] >= spacer:
@@ -86,6 +88,8 @@ def pulses_from_uesid(log, cnx, codesetid, uesid, freq):
         is_full_repeat = if_full_repeat(log, frames)
         log.out.write("|%s\n" % is_full_repeat)
 
+        if is_full_repeat:
+
     except Exception, e:
         print e
 
@@ -96,10 +100,13 @@ def main():
     #cnx = ir.DBConnection()
     cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     try:
-        query = ("SELECT DISTINCT a.uesid, b.codesetid, d.frequency FROM uespulses a, uesidfunctionmap b, codesets c, uescodes d "
-                 "WHERE a.uesid=b.uesid AND b.codesetid=c.codesetid AND b.uesid=d.uesid "
-                 "AND b.activeflag='Y' and c.activeflag='Y' "
-                 "AND a.seq=300 and a.frame='M'; ")
+        query = ("SELECT a.uesid, b.codesetid, d.frequency FROM uespulses a "
+                 "JOIN uesidfunctionmap b ON a.uesid=b.uesid "
+                 "JOIN codesets c ON b.codesetid=c.codesetid "
+                 "JOIN uescodes d ON b.uesid=d.uesid "
+                 "WHERE a.seq>500 and a.frame='M' "
+                 "AND b.activeflag='Y' and c.activeflag='Y'"
+                 "GROUP BY a.uesid; ")
         cnx.cursor.execute(query)
         results = cnx.cursor.fetchall()
         for row in results:
@@ -116,10 +123,12 @@ def test():
     log.out.write('CodesetID|UESID|Freqency|Array Size|Frame Count|Partial Repeat|Full Repeat\n')
     #cnx = ir.DBConnection()
     cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
-    log.out.write("%d|%d|%d|" % (691005, 473096, 38000))
-    pulses_from_uesid(log, cnx, 691005, 473096, 38000)
+    #log.out.write("%d|%d|%d|" % (691005, 473096, 38000))
+    #pulses_from_uesid(log, cnx, 691005, 473096, 38000)
+    log.out.write("%d|%d|%d|" % (1004194, 181972, 36000))
+    pulses_from_uesid(log, cnx, 1004194, 181972, 36000)
 
 
 if __name__ == '__main__':
-    main()
-    #test()
+    #main()
+    test()
