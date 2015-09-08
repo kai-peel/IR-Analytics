@@ -119,21 +119,21 @@ def pulses_from_uesid(log, cnx, codesetid, uesid, freq, repeats):
 
 def main():
     log = ir.Logger("mrr")
-    log.out.write('CodesetID|UESID|Freqency|Array Size|Frame Count|Partial Repeat|Full Repeat\n')
-    #cnx = ir.DBConnection()
-    cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
+    log.out.write('CodesetID|UESID|Freqency|RepeatCount|ArraySize|FrameCount|RepeatSizeDiff|PartialRepeat|MainSizeDiff|FullRepeat\n')
+    cnx = ir.DBConnection()
+    #cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     try:
         query = ("SELECT a.uesid, b.codesetid, d.frequency, d.repeatcount FROM uespulses a "
                  "JOIN uesidfunctionmap b ON a.uesid=b.uesid "
                  "JOIN codesets c ON b.codesetid=c.codesetid "
                  "JOIN uescodes d ON b.uesid=d.uesid "
-                 "WHERE a.seq>500 and a.frame='M' "
+                 "WHERE a.seq>300 and a.frame='M' "
                  "AND b.activeflag='Y' and c.activeflag='Y'"
                  "GROUP BY a.uesid; ")
         cnx.cursor.execute(query)
         results = cnx.cursor.fetchall()
         for row in results:
-            log.out.write("%d|%d|%d|" % (row[1], row[0], row[2]))
+            log.out.write("%d|%d|%d|%d|" % (row[1], row[0], row[2], row[3]))
             pulses_from_uesid(log, cnx, row[1], row[0], row[2], row[3])
             log.out.flush()
 
@@ -143,7 +143,7 @@ def main():
 
 def test():
     log = ir.Logger("mrr")
-    log.out.write('CodesetID|UESID|Freqency|Array Size|Frame Count|Partial Repeat|Full Repeat\n')
+    log.out.write('CodesetID|UESID|Freqency|RepeatCount|ArraySize|FrameCount|RepeatSizeDiff|PartialRepeat|MainSizeDiff|FullRepeat\n')
     cnx = ir.DBConnection()
     #cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     #log.out.write("%d|%d|%d|" % (691005, 473096, 38000))
@@ -153,5 +153,5 @@ def test():
 
 
 if __name__ == '__main__':
-    #main()
-    test()
+    main()
+    #test()
