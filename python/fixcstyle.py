@@ -36,6 +36,10 @@ def diff(log, frame1, frame2, exact=True):
         log.out.write("%d," % (len(frame1) - len(frame2)))
         if exact and len(frame1) != len(frame2):
             return False
+        elif len(frame2) > len(frame1):
+            # consider partial tail cutoff due to incomplete capture
+            return False
+
         # ignore the size difference, for now.
         length = min(len(frame1), len(frame2))
         for i in xrange(length-1):
@@ -52,9 +56,11 @@ def diff(log, frame1, frame2, exact=True):
 def if_partial_repeat(log, frames):
     try:
         frame1 = frames[1]
-        for i in xrange(2, len(frames)):
+        for i in xrange(2, len(frames) - 1):
             if not diff(log, frame1, frames[i]):
                 return False
+        if not diff(log, frame1, frames[len(frames) - 1], False):
+            return False
         return True
 
     except Exception, e:
@@ -141,15 +147,15 @@ def main():
         print e
 
 
-def test():
+def test(codesetid=190190, uesid=215300, frequency=38340, repeatcount=1):
     log = ir.Logger("mrr")
     log.out.write('CodesetID|UESID|Freqency|RepeatCount|ArraySize|FrameCount|RepeatSizeDiff|PartialRepeat|MainSizeDiff|FullRepeat\n')
     cnx = ir.DBConnection()
     #cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     #log.out.write("%d|%d|%d|" % (691005, 473096, 38000))
     #pulses_from_uesid(log, cnx, 691005, 473096, 38000)
-    log.out.write("%d|%d|%d|" % (1004194, 181946, 36000))
-    pulses_from_uesid(log, cnx, 1004194, 181946, 36000, 3)
+    log.out.write("%d|%d|%d|" % (codesetid, uesid, frequency))
+    pulses_from_uesid(log, cnx, codesetid, uesid, frequency, repeatcount)
 
 
 if __name__ == '__main__':
