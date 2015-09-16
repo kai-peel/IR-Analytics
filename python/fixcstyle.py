@@ -9,8 +9,9 @@ EMARGIN = 3  # margin of error tolerance in pulse count.
 PMARGIN = 0.20  # margin of error tolerance in percentage.
 
 
-def remove_full_repeats(cnx, uesid, frames, repeats):
+def remove_full_repeats(log, cnx, uesid, frames, repeats):
     try:
+        cstyle = "Full_Repeat"
         length = len(frames[0])
         query = ("UPDATE uespulses "
                  "SET frame = 'X' "
@@ -21,11 +22,12 @@ def remove_full_repeats(cnx, uesid, frames, repeats):
 
         repeats = min(len(frames) * repeats, 3)
         query = ("UPDATE uescodes "
-                 "SET codetype = 'Full_Repeat', repeatcount = %d "
+                 "SET codetype = '%s', repeatcount = %d "
                  "WHERE uesid = %d; " %
-                 (repeats, uesid))
+                 (cstyle, repeats, uesid))
         cnx.cursor.execute(query)
         cnx.db.commit()
+        log.log.write("%d|%s|%d|%d\n" % (uesid, cstyle, repeats, length))
 
     except Exception, e:
         print e
@@ -117,7 +119,7 @@ def pulses_from_uesid(log, cnx, codesetid, uesid, freq, repeats):
         log.out.write("|%s\n" % is_full_repeat)
 
         if is_partial_repeat and is_full_repeat:
-            remove_full_repeats(cnx, uesid, frames, repeats)
+            remove_full_repeats(log, cnx, uesid, frames, repeats)
 
     except Exception, e:
         print e
@@ -126,6 +128,8 @@ def pulses_from_uesid(log, cnx, codesetid, uesid, freq, repeats):
 def main():
     log = ir.Logger("mrr")
     log.out.write('CodesetID|UESID|Freqency|RepeatCount|ArraySize|FrameCount|RepeatSizeDiff|PartialRepeat|MainSizeDiff|FullRepeat\n')
+    log.log.write('UESID|CodeStyle|RepeatCount|ArraySize\n')
+
     cnx = ir.DBConnection()
     #cnx = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     try:

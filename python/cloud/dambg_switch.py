@@ -1,7 +1,7 @@
 #!/usr/bin/python
 __author__ = 'kai'
-__version__ = '3.0'
-__date__ = '29-Jul-2015'
+__version__ = '1.0'
+__date__ = '15-Sep-2015'
 from utils import irutils as ir
 
 """
@@ -35,6 +35,20 @@ class DBConnection:
 # @param[in] functionid
 #
 def level1(cnx, devicetypeid, brandid, country, functionid):
+
+
+# \fn level1
+# \note
+#   !!! query only intend to provide correct logic, not optimized for speed and performance. !!!
+#   !!! for simplification, only "power" key supported. !!!
+#   !!! before enter production, both "power" and "poweron" need to be supported. !!!
+#
+# @param[in] devicetypeid
+# @param[in] brandid
+# @param[in] country
+# @param[in] functionid
+#
+def _level1(cnx, devicetypeid, brandid, country, functionid):
     try:
         # test if this is a global or localized ranking
         if country is None:
@@ -343,12 +357,52 @@ def level3(cnx, devicetypeid, brandid, country, selid, selval, selid2, selval2, 
         print 'level3::%s' % e
 
 
-if __name__ == '__main__':
+def get_brands(cnx, devicetypeid):
+    try:
+        query = ("SELECT brandid FROM codesets "
+                 "WHERE activeflag = 'Y' "
+                 "AND devicetypeid = '%d' "
+                 "GROUP BY brandid; "
+                 % devicetypeid)
+        cnx.cursor.execute(query)
+        rows = cnx.cursor.fetchall()
+        brands = []
+        for each in rows:
+            brands.append(each[0])
+        return brands
+    except Exception, e:
+        print 'get_brands::%s' % e
+
+
+def get_devicetypes(cnx):
+    try:
+        query = ("SELECT a.devicetypeid, b.function_ids_for_level_1 FROM devicetypes a "
+                 "JOIN disambiguate_functions b on b.device_type_id; ")
+        cnx.cursor.execute(query)
+        rows = cnx.cursor.fetchall()
+        devicetypes = []
+        for each in rows:
+            devicetypes.append([each[0], each[1]])
+        return devicetypes
+    except Exception, e:
+        print 'get_devicetypes::%s' % e
+
+
+def main():
+    log = ir.Logger("das")
+    log.out.write("devicetypeid|brandid|codesets|distincts|ratio|brandname")
     cnx = ir.DBConnection()
     #cnx = DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
 
-    brands = [31] #, 87, 64, 74, 23, 30, 37, 69, 32, 57, 31, 36, 80, 24, 179, 41, 86, 165, 76, 197, 196, 283, 75, 38, 169, 78, 46, 82, 580, 172, 22, 222, 176, 200, 207, 166, 244, 560, 77, 7, 193, 173, 175, 25, 224, 148, 182, 72, 243, 185, 167, 187, 168, 251, 572, 50, 84, 139, 273, 27, 178, 230, 66, 163, 678, 1856, 164, 208, 302, 184, 2071, 304, 211, 246, 188, 39, 213, 255, 561, 192, 79, 171, 258, 20, 195, 267, 270, 619, 58, 177, 324, 625, 1832, 206, 419, 642, 1849, 238, 293, 490, 240, 507, 703, 1942, 209, 303, 528, 773, 210, 532, 777, 2519, 305, 545, 1183, 2551, 4, 212, 306, 1313, 2556, 6, 191, 307, 1323, 2559, 170, 217, 257, 309, 571, 1327, 2645, 9, 218, 311, 1337, 2647, 11, 44, 194, 219, 264, 312, 576, 1505, 220, 313, 577, 1596, 174, 221, 269, 314, 1747, 56, 315, 584, 1782, 198, 223, 271, 321, 1828]
-    for brandid in brands:
+    devicetypes = get_devicetypes(cnx)
+    print "\n%d devicetypes." % len(devicetypes)
+    for devicetypeid in devicetypes:
+        brands = get_brands(cnx, devicetypeid[0])
+        print "\n%d brands." % len(brands)
+        for brandid in brands:
+            print devicetypeid, ':', brandid
+
+"""    for brandid in brands:
         print '\n', brandid
         # 1st Level:
         # http://ec2-54-251-11-99.ap-southeast-1.compute.amazonaws.com:8080/targets/v2/disambiguate?devicetypeid=1&brandid=45&qstring=&country=CN&userid=821390208&tid=9560cb7161b9ca340b9e0279a5c4d9a3ba0ccffd
@@ -377,3 +431,7 @@ if __name__ == '__main__':
         #level2(cnx, 1, 254, 'CN', 23, '11000000001100x000Cx', 27)
         #level3(cnx, 1, 254, 'CN', 23, '11000000001100x000Cx', 27, '11000000101110x002Ex', 13)
         #level3(cnx, 1, 254, 'CN', 23, '00BF0DF2', 27, '00BF14EB', 13)
+"""
+
+if __name__ == '__main__':
+    main()

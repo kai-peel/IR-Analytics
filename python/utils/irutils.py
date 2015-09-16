@@ -81,6 +81,10 @@ class Logger:
         self.log.write('%s\n' % b)
         print b
 
+    def pout(self, b):
+        self.out.write('%s\n' % b)
+        print b
+
 
 def get_ir_stream(uesid):
     headers = {'User-Agent': "Peel"}
@@ -152,6 +156,66 @@ def get_ir_codeset(codesetid, langcode="en", userid="162077214", tid="e19457168f
         signature = hashed.digest().encode("base64").rstrip('\n')
         headers = {'User-Agent': "Peel", 'Authorization': "Peel %s:%s" % (authApiKey, signature)}
         req = ("%s%s?langcode=%s&userid=%s&tid=%s" % (baseUrl, resource, langcode, userid, tid))
+        request = urllib2.Request(req, headers=headers)
+        response = urllib2.urlopen(request)
+        uesdata = simplejson.loads(response.read())
+        return uesdata
+    except Exception, e:
+        print "ERR:get_ir_stream: %s" % e
+        return None
+
+
+def get_ir_power(devicetypeid, brandid, country='', userid="162077214", tid="e19457168fc0728e40f83887a7a88bd95e39ea56"):
+    try:
+        """
+        Authorization: "Peel" + " " + PeelAPIKey + ":" + Signature
+        Signature = Base64( HMAC-SHA1( UTF-8-Encoding-Of( SecretAccessKey, StringToSign ) ) )
+        StringToSign = HTTP-Method + "\n" + Content-Type + "\n" + Date + "\n" + Resource
+        HTTP-Method = <HTTP method, e.g., "GET", "POST">
+        Content-Type = <Value of HTTP Content-Type header>
+        Date = <Value of HTTP Date header>
+        Resource = <HTTP-Path of request, e.g, "/tvdb/search/shows", etc.>
+        """
+        # Peel c583c7c46eef455992a6846c81573f02:uOMrHXuMWX0KBzInZ7wUpv6GVcM=
+        resource = "/targets/v2/uesid/uesidsforfunction/Power"
+        http_date = ""  # formatdate(timeval=None, localtime=False, usegmt=True)
+        content_type = ""  # "application/json"
+        http_method = "GET"
+        string2sign = "%s\n%s\n%s\n%s" % (http_method, content_type, http_date, resource)
+        hashed = hmac.new(authApiSecret, string2sign, sha1)
+        signature = hashed.digest().encode("base64").rstrip('\n')
+        headers = {'User-Agent': "Peel", 'Authorization': "Peel %s:%s" % (authApiKey, signature)}
+        req = ("%s%s?devicetypeid=%d&brandid=%d&country=%s&userid=%s&tid=%s" % (baseUrl, resource, devicetypeid, brandid, country, userid, tid))
+        request = urllib2.Request(req, headers=headers)
+        response = urllib2.urlopen(request)
+        uesdata = simplejson.loads(response.read())
+        return uesdata
+    except Exception, e:
+        print "ERR:get_ir_stream: %s" % e
+        return None
+
+
+def get_ir_level1(devicetypeid, brandid, country='', userid="162077214", tid="e19457168fc0728e40f83887a7a88bd95e39ea56"):
+    try:
+        """
+        Authorization: "Peel" + " " + PeelAPIKey + ":" + Signature
+        Signature = Base64( HMAC-SHA1( UTF-8-Encoding-Of( SecretAccessKey, StringToSign ) ) )
+        StringToSign = HTTP-Method + "\n" + Content-Type + "\n" + Date + "\n" + Resource
+        HTTP-Method = <HTTP method, e.g., "GET", "POST">
+        Content-Type = <Value of HTTP Content-Type header>
+        Date = <Value of HTTP Date header>
+        Resource = <HTTP-Path of request, e.g, "/tvdb/search/shows", etc.>
+        """
+        # Peel c583c7c46eef455992a6846c81573f02:uOMrHXuMWX0KBzInZ7wUpv6GVcM=
+        resource = "/targets/v2/disambiguate"
+        http_date = ""  # formatdate(timeval=None, localtime=False, usegmt=True)
+        content_type = ""  # "application/json"
+        http_method = "GET"
+        string2sign = "%s\n%s\n%s\n%s" % (http_method, content_type, http_date, resource)
+        hashed = hmac.new(authApiSecret, string2sign, sha1)
+        signature = hashed.digest().encode("base64").rstrip('\n')
+        headers = {'User-Agent': "Peel", 'Authorization': "Peel %s:%s" % (authApiKey, signature)}
+        req = ("%s%s?devicetypeid=%d&brandid=%d&qstring=&country=%s&userid=%s&tid=%s" % (baseUrl, resource, devicetypeid, brandid, country, userid, tid))
         request = urllib2.Request(req, headers=headers)
         response = urllib2.urlopen(request)
         uesdata = simplejson.loads(response.read())

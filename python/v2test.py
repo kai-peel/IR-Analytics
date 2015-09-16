@@ -4,11 +4,11 @@ import json
 
 def main():
     try:
-        res = ir.get_ir_stream2(215300)
-        print json.dumps(res, indent=4, sort_keys=True)
-        #print "========================================================================================================================"
-        #res = ir.get_ir_codeset(390461)
-        #print json.dumps(res, indent=4, sort_keys=True)
+        #res = ir.get_ir_stream2(269285)
+        #res = ir.get_ir_codeset(390465)
+        res = ir.get_ir_power(3, 31, 'CN')
+        #res = ir.get_ir_level1(3, 31, 'CN')
+        print json.dumps(res, indent=2, sort_keys=True)
 
     except Exception, e:
         print e
