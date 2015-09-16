@@ -82,7 +82,7 @@ class Logger:
         print b
 
     def pout(self, b):
-        self.out.write('%s\n' % b)
+        self.out.write('%s' % b)
         print b
 
 
