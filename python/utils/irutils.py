@@ -1,5 +1,3 @@
-__version__ = "4.0.0"
-__date__ = "05-DEC-2014"
 import subprocess
 import simplejson
 import urllib2
@@ -11,6 +9,10 @@ import os
 from email.utils import formatdate
 from hashlib import sha1
 import hmac
+import codecs
+
+__version__ = "4.0.0"
+__date__ = "05-DEC-2014"
 
 IRDBV1 = "175.41.143.31"  # production
 IRDBV2 = "54.251.240.47"  # secured production
@@ -64,9 +66,9 @@ class Logger:
         log_filename = "%s%s.log" % (tag, time_stamp_suffix)
         out_filename = "%s%s.txt" % (tag, time_stamp_suffix)
         bat_filename = "%s%s.bat" % (tag, time_stamp_suffix)
-        self.log = open(log_filename, 'w')
-        self.out = open(out_filename, 'w')
-        self.bat = open(bat_filename, 'w')
+        self.log = codecs.open(log_filename, 'w', 'utf-8')
+        self.out = codecs.open(out_filename, 'w', 'utf-8')
+        self.bat = codecs.open(bat_filename, 'w', 'utf-8')
         self.start_time = datetime.datetime.now()
         self.log.write("Started: %s.\n" % self.start_time)
 

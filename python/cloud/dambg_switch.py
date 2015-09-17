@@ -420,7 +420,6 @@ def get_devicetypes(cnx):
     try:
         query = ("SELECT a.devicetypeid, b.function_ids_for_level_1, a.devicetype FROM devicetypes a "
                  "JOIN disambiguate_functions b on b.device_type_id = a.devicetypeid "
-                 "AND a.devicetypeid = 2 "
                  "GROUP BY a.devicetypeid; ")
         cnx.cursor.execute(query)
         return cnx.cursor.fetchall()
