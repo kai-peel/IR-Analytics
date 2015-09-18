@@ -3,3 +3,14 @@
 *.log
 *.txt
 *.pyc
+*.iml
+
+.idea/.name
+
+ingest/.idea/.name
+
+ingest/IrHunter/.idea/.name
+
+ingest/IrHunter/wIRUtil.py
+
+python/.idea/.name
