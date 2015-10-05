@@ -402,6 +402,22 @@ def get_codeset_count(cnx, devicetypeid, brandid):
         print 'get_codeset_count::%s' % e
 
 
+def get_key_count(cnx, devicetypeid, brandid, functions):
+    try:
+        query = ("SELECT count(*) FROM codesets a "
+                 "JOIN uesidfunctionmap b ON b.codesetid = a.codesetid "
+                 "WHERE a.activeflag = 'Y' AND b.activeflag = 'Y' "
+                 "AND devicetypeid = %d "
+                 "AND brandid = %d "
+                 "AND b.functionid IN (%s); "
+                 % (devicetypeid, brandid, functions))
+        cnx.cursor.execute(query)
+        row = cnx.cursor.fetchone()
+        return row[0]
+    except Exception, e:
+        print 'get_key_count::%s' % e
+
+
 def get_brands(cnx, devicetypeid):
     try:
         query = ("SELECT a.brandid, b.brandname FROM codesets a "
@@ -429,7 +445,7 @@ def get_devicetypes(cnx):
 
 def main():
     log = ir.Logger("das")
-    log.out.write("devicetypeid|brandid|codesets|distincts|ratio|delta|brandname|devicetype\n")
+    log.out.write("devicetypeid|brandid|codesets|keys|distincts|ratio|delta|brandname|devicetype\n")
     cnx = ir.DBConnection()
     #cnx = DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
     try:
@@ -440,13 +456,20 @@ def main():
             for brandid in brands:
                 print brandid[1], devicetypeid[2]
                 dist = get_level1_count(cnx, devicetypeid[0], brandid[0], devicetypeid[1])
-                full = get_codeset_count(cnx, devicetypeid[0], brandid[0])
-                log.out.write("%d|%d|%d|%d|%0.2f|%d|%s|%s\n"
+                old = get_codeset_count(cnx, devicetypeid[0], brandid[0])
+                full = get_key_count(cnx, devicetypeid[0], brandid[0], devicetypeid[1])
+                if full > 0:
+                    r = (dist * 100.0) / full
+                else:
+                    r = (dist * 100.0) / old
+
+                log.out.write("%d|%d|%d|%d|%d|%0.2f|%d|%s|%s\n"
                               % (devicetypeid[0],
                                  brandid[0],
+                                 old,
                                  full,
                                  dist,
-                                 (dist * 100.0) / full,
+                                 r,  # (dist * 100.0) / full,
                                  full - dist,
                                  brandid[1],
                                  devicetypeid[2]))

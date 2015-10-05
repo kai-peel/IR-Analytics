@@ -1,50 +1,57 @@
-# -*- coding:utf-8 -*-
-
 import serial
 import threading
 import glob
+import sys
+g_isMac = False
 
-#class IRUtilities(threading.Thread):
-class IRUtilities():
-    
+
+class IRUtilities(threading.Thread):
+#class IRUtilities():
     def __init__(self):
-        #threading.Thread.__init__(self)
-        #devlist=glob.glob('/dev/tty.usbserial*')
-        #if not devlist:
-        #    devlist=glob.glob('/dev/tty.wch*')
-        #self.port=devlist[0]
-        self.port="COM5"
-        print self.port
-        self.data=""
-        self.ser=serial.Serial(self.port,9600,parity=serial.PARITY_NONE)
+        global g_isMac
+        threading.Thread.__init__(self)
+        if sys.platform == 'darwin':
+            g_isMac = True
+            devlist = glob.glob('/dev/tty.usbserial*')
+            if not devlist:
+                devlist = glob.glob('/dev/tty.wch*')
+            self.port = devlist[0]
+        else:
+            g_isMac = False
+            self.port = "COM5"
+        self.data = ""
+        #print self.port
+        self.ser = serial.Serial(self.port, 9600, parity=serial.PARITY_NONE)
         if self.ser.isOpen():
             self.ser.close()
-        self.ser.open()
-    
+        #self.ser.open()
+
     def run(self):
         print "listening"
-        self.data=self.readfromserial()
+        self.data = self.readfromserial()
         return self.data
         
     def readfromserial(self):
-        counter=0
+        #self.ser = serial.Serial(self.port, 9600, parity=serial.PARITY_NONE, timeout=10)
+        if self.ser.isOpen():
+            self.ser.close()
+        self.ser.open()
         try:
-            char=' '
-            line='##'
-            while (ord(char) <> 13):
+            char = ' '
+            line = '##'
+            while ord(char) != 13:
                 try:
-                    char=self.ser.read()
-                    if char <> '\x00':
-                        line=line+char
-                except Exception,e:
+                    char = self.ser.read()
+                    if char != '\x00':
+                        line = line + char
+                except Exception, e:
                     print e
-    
-            line=line+"\n"
-            #self.ser.close()
+            line += '\n'
+            self.ser.close()
             return self.decodeGCIRL(line)
-        except Exception,e:
+        except Exception, e:
             print e
-            #self.ser.close()
+            self.ser.close()
             
     def decodeGCIRL(self,irstring):
         codedict=dict([(0,''),(1,''),(2,''),(3,''),(4,''),(5,''),(6,'')])

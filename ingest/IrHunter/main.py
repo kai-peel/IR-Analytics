@@ -26,13 +26,16 @@ DVD_KEYS = ["Power", "Rewind", "Play", "Fast_Forward", "Stop", "Pause", "Menu", 
         "Navigate_Left", "Navigate_Right", "Exit", "Previous", "Next", "Audio_Channel", "Back", "Eject", "Volume_UP", "Volume_Down",
         "Mute", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
+SoundBar_KEYS = ["Input", "Bluetooth", "Power", "Volume_UP", "Volume_Down", "Previous", "Next", "Play/Pause",
+                 "TruVolume", "TruSurround HD", "Mute", "Treble", "Bass"]
+
 if __name__ == "__main__":
     irreader=IRUtilities()
     codes = []
-    device_type_list = ["TV", "AC", "DVD"]
+    device_type_list = ["TV", "AC", "DVD", "sb"]
     drivce_type = None
     while not drivce_type in device_type_list:
-        drivce_type = raw_input("Input the device type(TV, AC, DVD):")
+        drivce_type = raw_input("Input the device type(TV, AC, DVD, sb):")
 
     keys = None
     if drivce_type == "TV":
@@ -41,6 +44,9 @@ if __name__ == "__main__":
         keys = AC_KEYS
     elif drivce_type == "DVD":
         keys = DVD_KEYS
+    elif drivce_type == "sb":
+        keys = SoundBar_KEYS
+
     for key in keys:
         #irreader.start()
         #irreader.join()
