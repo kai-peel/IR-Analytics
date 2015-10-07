@@ -8,7 +8,51 @@ import numpy as np
 import math
 import pickle
 FREQUENCY_TOLERANCE_RANGE = 1000
-BURST_WIDTH_STEP = 5
+BURST_MAX_STEP = 150  # 6 counts.
+BURST_MIN_STEP = 25  # 1 counts.
+
+
+def median(a):
+    try:
+        # use median with a fixed error threshold.
+        h = int(math.floor(len(a) / 2.0))
+        return a[h]
+
+    except Exception, e:
+        print 'median::%s' % e
+
+
+def average(a):
+    try:
+        # "InterQuartile Range Rule" for outlier detection.
+        if len(a) > 3:
+            qtr = int(math.floor(len(a) / 4.0))
+            # ascending array
+            q1 = a[qtr] - 1.5 * (a[-qtr-1] - a[qtr])
+            q3 = a[-qtr-1] + 1.5 * (a[-qtr-1] - a[qtr])
+            # excluding outliers.
+            m = []
+            for ea in a:
+                if q1 <= ea <= q3:
+                    m.append(ea)
+            return np.mean(m)
+
+        return np.mean(a)
+
+    except Exception, e:
+        print 'average::%s' % e
+
+
+def analyze(a):
+    s = []
+    try:
+        a.sort(reverse=True)
+        # check if more than one value.
+        if (a[0] - a[-1]) < BURST_MAX_STEP:
+            return s.append(average(a))
+
+    except Exception, e:
+        print 'hist::%s' % e
 
 
 class _IRProtocol:
@@ -31,6 +75,24 @@ class _IRProtocol:
         self.repoutL = []
         self.dataH = []
         self.dataL = []
+
+    def calc(self):
+        if len(self.leadinH) > 0:
+            self.lin.append(average(self.leadinH))
+            self.lin.append(average(self.leadinL))
+        if len(self.leadoutH) > 0:
+            self.lout.append(average(self.leadoutH))
+            self.lout.append(median(self.leadoutL))
+
+        if len(self.repinH) > 0:
+            self.rin.append(average(self.repinH))
+            self.rin.append(average(self.repinL))
+        if len(self.repoutH) > 0:
+            self.rout.append(average(self.repoutH))
+            self.rout.append(median(self.repoutL))
+
+        # data decoding logic.
+        analyze(self.dataH)
 
 
 class _Logger:
@@ -56,14 +118,22 @@ class _Logger:
 
 
 def pulse2msec(pulse, frequency):
-    return (pulse * 1000000.0) / float(frequency)
+    try:
+        return (pulse * 1000000.0) / float(frequency)
+
+    except Exception, e:
+        print 'pulse2msec::%s' % e
 
 
 def pparray2msarray(pulses, frequency):
-    a = []
-    for ea in pulses:
-        a.append((ea * 1000000.0) / float(frequency))
-    return a
+    try:
+        a = []
+        for ea in pulses:
+            a.append((ea * 1000000.0) / float(frequency))
+        return a
+
+    except Exception, e:
+        print 'pparray2msarray::%s' % e
 
 
 def add_to_main_data(prot, freq, pulses):
@@ -264,6 +334,7 @@ def main():
             #prot.lin.append(get_elements(cnx, freq, keys, 0))
             #prot.lin.append(get_elements(cnx, freq, keys, 1))
             get_pulse_pairs_from_keys(prot, keys)
+            prot.calc()
             a.append(prot)
             print a
 
