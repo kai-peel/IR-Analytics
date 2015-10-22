@@ -16,7 +16,7 @@ def remove_extra_repeats(log, cnx, uesid, start, stop):
                  "WHERE uesid = %d AND seq >= %d AND seq <= %d; " %
                  (uesid, start, stop))
         cnx.cursor.execute(query)
-        #cnx.db.commit()
+        cnx.db.commit()
         log.log.write("%d|%d|%d\n" % (uesid, start, stop))
 
     except Exception, e:
