@@ -158,12 +158,48 @@ def get_ir_codeset(codesetid, langcode="en", userid="162077214", tid="e19457168f
         signature = hashed.digest().encode("base64").rstrip('\n')
         headers = {'User-Agent': "Peel", 'Authorization': "Peel %s:%s" % (authApiKey, signature)}
         req = ("%s%s?langcode=%s&userid=%s&tid=%s" % (baseUrl, resource, langcode, userid, tid))
+        print req
         request = urllib2.Request(req, headers=headers)
         response = urllib2.urlopen(request)
         body = response.read()
         sz = len(body)
         uesdata = simplejson.loads(body)
         return uesdata
+    except Exception, e:
+        print "ERR:get_ir_stream: %s" % e
+        return None
+
+
+def get_ir_codeset2(codesetid, langcode="en", userid="162077214", tid="e19457168fc0728e40f83887a7a88bd95e39ea56"):
+    try:
+        """
+        Authorization: "Peel" + " " + PeelAPIKey + ":" + Signature
+        Signature = Base64( HMAC-SHA1( UTF-8-Encoding-Of( SecretAccessKey, StringToSign ) ) )
+        StringToSign = HTTP-Method + "\n" + Content-Type + "\n" + Date + "\n" + Resource
+        HTTP-Method = <HTTP method, e.g., "GET", "POST">
+        Content-Type = <Value of HTTP Content-Type header>
+        Date = <Value of HTTP Date header>
+        Resource = <HTTP-Path of request, e.g, "/tvdb/search/shows", etc.>
+        """
+        # Peel c583c7c46eef455992a6846c81573f02:uOMrHXuMWX0KBzInZ7wUpv6GVcM=
+        resource = "/targets/v2/uesid/uesidsforcodeset/%d" % codesetid
+        http_date = ""  # formatdate(timeval=None, localtime=False, usegmt=True)
+        content_type = ""  # "application/json"
+        http_method = "GET"
+        string2sign = "%s\n%s\n%s\n%s" % (http_method, content_type, http_date, resource)
+        hashed = hmac.new(authApiSecret, string2sign, sha1)
+        signature = hashed.digest().encode("base64").rstrip('\n')
+        headers = {'User-Agent': "Peel", 'Authorization': "Peel %s:%s" % (authApiKey, signature)}
+        req = ("%s%s?langcode=%s&userid=%s&tid=%s" % (baseUrl, resource, langcode, userid, tid))
+        print req
+        request = urllib2.Request(req, headers=headers)
+        response = urllib2.urlopen(request)
+        body = response.read()
+        sz = len(body)
+        print sz, " bytes."
+        uesdata = simplejson.loads(body)
+        return uesdata, sz
+
     except Exception, e:
         print "ERR:get_ir_stream: %s" % e
         return None
