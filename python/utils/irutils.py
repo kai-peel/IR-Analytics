@@ -162,9 +162,17 @@ def get_ir_codeset(codesetid, langcode="en", userid="162077214", tid="e19457168f
         request = urllib2.Request(req, headers=headers)
         response = urllib2.urlopen(request)
         body = response.read()
-        sz = len(body)
+        #sz = len(body)
+
+        filename = "uesidsforcodeset.log"
+        log = codecs.open(filename, 'w', 'utf-8')
+        log.write(body)
+        log.flush()
+        log.close()
+
         uesdata = simplejson.loads(body)
         return uesdata
+
     except Exception, e:
         print "ERR:get_ir_stream: %s" % e
         return None

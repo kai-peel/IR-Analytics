@@ -14,6 +14,7 @@ BURST_MAX_STEP = 5  # pulse counts.
 BURST_MIN_STEP = 1  # pulse counts.
 SEPARATION_SIZE = 20  # 20 msec from global cache.
 USE_USEC = True  # switch between microsecond calculation (frequency independent) and pulse count.
+BIN_MAX = 31  # (2 * maximum encoding value) - 1.
 
 
 def median(a):
@@ -72,12 +73,15 @@ def analyze(a, freq):
             return [average(a)]
 
         b = int(math.ceil((a[-1] - a[0]) / rmin))
+        if b > BIN_MAX:
+            b = BIN_MAX
         h = np.histogram(a, bins=b)
         val = 0
         peak = 0
         bins = []
+        odd = int(len(a) / 100.0)  # exclude value in small quantity (< 1%).
         for x in xrange(len(h[0])):
-            if h[0][x] == 0:
+            if h[0][x] < odd:
                 # reset at space.
                 if val > 0:
                     bins.append((h[1][peak] + h[1][peak + 1]) / 2)
@@ -86,11 +90,9 @@ def analyze(a, freq):
                 # record heavier bin
                 peak = x
                 val = h[0][x]
-
         # add the tail.
         if val > 0:
             bins.append((h[1][peak] + h[1][peak + 1]) / 2)
-
         return bins
 
     except Exception, e:
@@ -444,6 +446,34 @@ def protocol_analysis(logs, cnx, target):
         print 'protocol_analysis::%s' % e
 
 
+def test(codeset):
+    cnx = ir.DBConnection()
+    logs = _Logger("test")
+    logs.prot.write("protocol_id|codeset_id|format|frequency|little_endian|lead_in|lead_out|repeat_in|repeat_out|encoders\n")
+    logs.cset.write("codeset_id|protocol_id|cloud_size|repeat_count|content_length\n")
+    logs.keys.write("code_id|codeset_id|function_id|content\n")
+    try:
+        codesets = [[290717], [290718], [290719], [290841], [290852], [290918], [290930]]
+        for ea in codesets:
+            (fmt, keys) = get_keys(logs.keys, cnx, ea[0])
+            logs.keys.flush()
+
+            (freq, keys) = chk_frequencies(cnx, keys)
+            prot = _IRProtocol(fmt, freq)
+            logs.prot.write("%d|%d|%s|%d|" % (prot.id, ea[0], fmt, freq))
+
+            (content, length) = ir.get_ir_codeset2(ea[0])
+            logs.cset.write("%d|%d|%d|" % (ea[0], prot.id, length))
+
+            get_pulse_pairs_from_keys(prot, keys)
+            prot.calc()
+            #a.append(prot)
+            protocol_print(logs, prot)
+
+    except Exception, e:
+        print 'test::%s' % e
+
+
 def main():
     try:
         cnx = ir.DBConnection()
@@ -471,4 +501,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    #main()
+    test(180188)
