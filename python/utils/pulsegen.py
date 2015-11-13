@@ -12,14 +12,16 @@ IRDBSG = '54.254.101.29'  # staging
 
 
 class ProtocolSpec:
-    def __init__(self, idx, modulation, frequency, endian, toggle_bits, gap_bits, repeat_count, spec):
+    def __init__(self, idx, modulation, frequency, endian, toggle_bits, gap_bits, repeat_count, repeat_content, repeat_toggle, spec):
         self.id = idx
         self.modulation = modulation
         self.frequency = frequency
-        self.repeat_count = repeat_count
         self.endian = endian
         self.toggle_bits = toggle_bits
         self.gap_bits = gap_bits
+        self.repeat_count = repeat_count
+        self.repeat_content = repeat_content
+        self.repeat_toggle_bits = repeat_toggle
         self.lead_in = []
         self.lead_out = []
         self.repeat_in = []
@@ -98,13 +100,15 @@ class Hydra:
             toggle = prot[5]
             gap = prot[6]
             repeat = prot[7]
+            rdata = prot[8]
+            rtoggle = prot[9]
 
             # protocol data
             sql = ("SELECT * FROM pulses WHERE prot_id = %d ORDER BY seq; " % idx)
             self.cursor.execute(sql)
             rows = self.cursor.fetchall()
 
-            enc = ProtocolSpec(idx, modulation, frequency, endian, toggle, gap, repeat, rows)
+            enc = ProtocolSpec(idx, modulation, frequency, endian, toggle, gap, repeat, rdata, rtoggle, rows)
             return enc
 
         except Exception, e:
@@ -114,14 +118,10 @@ class Hydra:
         try:
             # ex. "1001111 10001 [79 11]"
             # ex. "20120033 01 [860F 1]"
-            full_code, hex_code = ygval.split('[')
-            if hex_code:
-                # radix = len(set(full_code) - set('01 ')) + 2
-                data = self.build_from_binary(spec, full_code)
-            else:
-                data = self.build_from_hex(spec, full_code)
+            full_code = ygval.split('[')
+            # radix = len(set(full_code) - set('01 ')) + 2
+            data = self.build_from_hex(spec, full_code[0], (len(full_code) > 1))
             return self.build_frames(spec, data)
-
         except Exception, e:
             print "ERR:Hydra:build: %s" % e
 
@@ -156,16 +156,76 @@ class Hydra:
         except Exception, e:
             print "ERR:PulseGen:data2pulses: %s" % e
 
-    def build_frames(self, spec, data):
-        main_frame = []
-        repeat_frame = []
-        toggle_frame = []
+    @staticmethod
+    def build_frame(data, encoder, lead_in, lead_out, gap, toggle_bits, gap_bits):
         try:
+            raw = []
+            # construct pulse sequence for main frame.
+            if lead_in and len(lead_in) > 0:
+                raw.extend(lead_in)
+            # check if there is data content.
+            if data and len(data) > 0:
+                radix = len(encoder)  # encoding base.
+                # construct pulse sequence for toggle frame.
+                if toggle_bits and len(toggle_bits) > 0:
+                    toggle_pos = map(int, toggle_bits.split(','))
+                else:
+                    toggle_pos = []
+                # check if there is a half-marker.
+                if gap_bits and len(gap_bits) > 0:
+                    gap_pos = int(gap_bits)  # support only 1 gap for now.
+                    for x in xrange(gap_pos):
+                        if x in toggle_pos:
+                            t = (data[x] + (radix / 2)) % radix
+                            raw.extend(encoder[t])
+                        else:
+                            raw.extend(encoder[data[x]])
+                    raw.extend(gap)
+                    for x in xrange(gap_pos, len(data)):
+                        if x in toggle_pos:
+                            t = (data[x] + (radix / 2)) % radix
+                            raw.extend(encoder[t])
+                        else:
+                            raw.extend(encoder[data[x]])
+                else:
+                    for x in xrange(len(data)):
+                        if x in toggle_pos:
+                            t = (data[x] + (radix / 2)) % radix
+                            raw.extend(encoder[t])
+                        else:
+                            raw.extend(encoder[data[x]])
+            if lead_out and len(lead_out) > 0:
+                raw.extend(lead_out)
+            return raw
+
+        except Exception, e:
+            print "ERR:PulseGen:build_frame: %s" % e
+
+    def build_frames(self, spec, data):
+        try:
+            raw = self.build_frame(data, spec.encoder, spec.lead_in, spec.lead_out, spec.gap, None, spec.gap_bits)
+            main_frame = self.data2pulses(spec, raw)
+
+            if len(spec.repeat_in) > 0 or len(spec.repeat_out) > 0 or spec.repeat_content == 'Y':
+                rdata = data if spec.repeat_content == 'Y' else None
+                raw = self.build_frame(rdata, spec.encoder, spec.repeat_in, spec.repeat_out, spec.gap, spec.repeat_toggle_bits, spec.gap_bits)
+                repeat_frame = self.data2pulses(spec, raw)
+            else:
+                repeat_frame = []
+
+            if spec.toggle_bits and len(spec.toggle_bits) > 0:
+                raw = self.build_frame(data, spec.encoder, spec.lead_in, spec.lead_out, spec.gap, spec.toggle_bits, spec.gap_bits)
+                toggle_frame = self.data2pulses(spec, raw)
+            else:
+                toggle_frame = []
+
+            """
+            radix = len(spec.encoder)
+
             raw = []
             # construct pulse sequence for main frame.
             if len(spec.lead_in) > 0:
                 raw.extend(spec.lead_in)
-
             # check if there's half-marker.
             if spec.gap_bits and len(spec.gap_bits) > 0:
                 gap = int(spec.gap_bits)
@@ -177,21 +237,17 @@ class Hydra:
             else:
                 for ea in data:
                     raw.extend(spec.encoder[ea])
-
             if len(spec.lead_out) > 0:
                 raw.extend(spec.lead_out)
-
             main_frame = self.data2pulses(spec, raw)
 
             raw = []
             # construct pulse sequence for toggle frame.
-            if spec.toggle_bits and len(spec.toggle_bits) > 0:
+            if len(spec.toggle_bits) > 0:
                 toggle_bits = map(int, spec.toggle_bits.split(','))
                 radix = len(spec.encoder)
-
                 if len(spec.lead_in) > 0:
                     raw.extend(spec.lead_in)
-
                 # check if there's half-marker.
                 if spec.gap_bits and len(spec.gap_bits) > 0:
                     gap = int(spec.gap_bits)
@@ -215,38 +271,38 @@ class Hydra:
                             raw.extend(spec.encoder[t])
                         else:
                             raw.extend(spec.encoder[data[x]])
-
                 if len(spec.lead_out) > 0:
                     raw.extend(spec.lead_out)
                 toggle_frame = self.data2pulses(spec, raw)
-
+            """
             return spec.frequency, spec.repeat_count, main_frame, repeat_frame, toggle_frame
 
         except Exception, e:
             print "ERR:PulseGen:build_frames: %s" % e
 
     @staticmethod
-    def build_from_binary(spec, full_code):
+    def hex_to_binary(hex_value):
+        return hex_value
+
+    def build_from_hex(self, spec, full_code, raw):
         data = []
         try:
             words = full_code.split(' ')
+            radix = len(spec.encoder)
             for ea in words:
+                # check if need to convert from hex to binary.
+                if not raw and radix < 16:
+                    val = self.hex_to_binary(ea)
+                else:
+                    val = ea
                 idx = len(data)
-                for c in ea:
+                for c in val:
                     # big-endian, msb reading style.
                     if spec.endian == 'B':
-                        data.append(int(c))
+                        data.append(int(c, radix))
                     # little-endian, lsb reading style.
                     else:
-                        data.insert(idx, int(c))
-            return data
-        except Exception, e:
-            print "ERR:PulseGen:build_from_binary: %s" % e
-
-    @staticmethod
-    def build_from_hex(spec, full_code):
-        data = []
-        try:
+                        data.insert(idx, int(c, radix))
             return data
         except Exception, e:
             print "ERR:PulseGen:build_from_hex: %s" % e
