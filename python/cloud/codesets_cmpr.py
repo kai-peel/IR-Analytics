@@ -176,42 +176,45 @@ class _IRProtocol:
         self._repCnt = []
 
     def calc(self):
-        self.dtlen = median(self._datalen)
-        self.rcnt = median(self._repCnt)
+        try:
+            self.dtlen = median(self._datalen)
+            self.rcnt = median(self._repCnt)
 
-        if len(self._leadinH) > 0:
-            self.t_linH = median(self._leadinH)
-            self.t_linL = median(self._leadinL)
-            self.linH = usec2pulse(self.t_linH, self.frequency)
-            self.linL = usec2pulse(self.t_linL, self.frequency)
-        if len(self._leadoutH) > 0:
-            self.t_loutH = median(self._leadoutH)
-            self.t_loutL = median(self._leadoutL)
-            self.loutH = usec2pulse(self.t_loutH, self.frequency)
-            self.loutL = usec2pulse(self.t_loutL, self.frequency)
-        if len(self._repinH) > 0:
-            self.t_rinH = median(self._repinH)
-            self.t_rinL = median(self._repinL)
-            self.rinH = usec2pulse(self.t_rinH)
-            self.rinL = usec2pulse(self.t_rinL)
-        if len(self._repoutH) > 0:
-            self.t_routH = median(self._repoutH)
-            self.t_routL = median(self._repoutL)
-            self.routH = usec2pulse(self.t_routH)
-            self.routL = usec2pulse(self.t_routL)
-        if len(self._gapL) > 0:
-            self.t_gapL = median(self._gapL)
-            self.gapL = usec2pulse(self.t_gapL, self.frequency)
+            if len(self._leadinH) > 0:
+                self.t_linH = median(self._leadinH)
+                self.t_linL = median(self._leadinL)
+                self.linH = usec2pulse(self.t_linH, self.frequency)
+                self.linL = usec2pulse(self.t_linL, self.frequency)
+            if len(self._leadoutH) > 0:
+                self.t_loutH = median(self._leadoutH)
+                self.t_loutL = median(self._leadoutL)
+                self.loutH = usec2pulse(self.t_loutH, self.frequency)
+                self.loutL = usec2pulse(self.t_loutL, self.frequency)
+            if len(self._repinH) > 0:
+                self.t_rinH = median(self._repinH)
+                self.t_rinL = median(self._repinL)
+                self.rinH = usec2pulse(self.t_rinH, self.frequency)
+                self.rinL = usec2pulse(self.t_rinL, self.frequency)
+            if len(self._repoutH) > 0:
+                self.t_routH = median(self._repoutH)
+                self.t_routL = median(self._repoutL)
+                self.routH = usec2pulse(self.t_routH, self.frequency)
+                self.routL = usec2pulse(self.t_routL, self.frequency)
+            if len(self._gapL) > 0:
+                self.t_gapL = median(self._gapL)
+                self.gapL = usec2pulse(self.t_gapL, self.frequency)
 
-        # data decoding logic.
-        dH = analyze2(self._dataH, self.frequency)
-        dL = analyze2(self._dataL, self.frequency)
+            # data decoding logic.
+            dH = analyze2(self._dataH, self.frequency)
+            dL = analyze2(self._dataL, self.frequency)
 
-        # pulse modulation encoders.
-        for pH in dH:
-            for pL in dL:
-                self.t_dta.append([pH, pL])
-                self.dta.append([usec2pulse(pH, self.frequency), usec2pulse(pL, self.frequency)])
+            # pulse modulation encoders.
+            for pH in dH:
+                for pL in dL:
+                    self.t_dta.append([pH, pL])
+                    self.dta.append([usec2pulse(pH, self.frequency), usec2pulse(pL, self.frequency)])
+        except Exception, e:
+            print 'calc::%s' % e
 
 
 class _Logger:
