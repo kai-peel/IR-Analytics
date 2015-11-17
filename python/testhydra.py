@@ -45,7 +45,7 @@ def test_pulse(irdb, irgen, fmt):
         for ea in rows:
             encoded_binary = ea[1]
             frequency, repeat_count, main_frame, repeat_frame, toggle_frame = irgen.build(enc, encoded_binary)
-            print pulses
+            print main_frame, '\n', repeat_frame
 
     except Exception, e:
         print 'check_irdb: %s' % e
@@ -59,7 +59,8 @@ def test():
     start_time = datetime.datetime.now()
     print "Started: %s." % start_time
 
-    test_codeset(log, v2, hy, 290918)
+    #test_codeset(log, v2, hy, 100012)
+    test_codeset(log, v2, hy, 180131)
     #test_pulse(v2, hy, 'RC-5x') 'uPD6121G
 
     end_time = datetime.datetime.now()

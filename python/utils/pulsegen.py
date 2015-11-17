@@ -3,6 +3,7 @@ __author__ = 'kai'
 __version__ = '1.0'
 __date__ = '2015-11-06'
 import MySQLdb
+#import binascii
 import numpy as np
 #import datetime
 #import irutils as ir
@@ -218,71 +219,14 @@ class Hydra:
                 toggle_frame = self.data2pulses(spec, raw)
             else:
                 toggle_frame = []
-
-            """
-            radix = len(spec.encoder)
-
-            raw = []
-            # construct pulse sequence for main frame.
-            if len(spec.lead_in) > 0:
-                raw.extend(spec.lead_in)
-            # check if there's half-marker.
-            if spec.gap_bits and len(spec.gap_bits) > 0:
-                gap = int(spec.gap_bits)
-                for x in xrange(gap):
-                    raw.extend(spec.encoder[data[x]])
-                raw.extend(spec.gap)
-                for x in xrange(gap, len(data)):
-                    raw.extend(spec.encoder[data[x]])
-            else:
-                for ea in data:
-                    raw.extend(spec.encoder[ea])
-            if len(spec.lead_out) > 0:
-                raw.extend(spec.lead_out)
-            main_frame = self.data2pulses(spec, raw)
-
-            raw = []
-            # construct pulse sequence for toggle frame.
-            if len(spec.toggle_bits) > 0:
-                toggle_bits = map(int, spec.toggle_bits.split(','))
-                radix = len(spec.encoder)
-                if len(spec.lead_in) > 0:
-                    raw.extend(spec.lead_in)
-                # check if there's half-marker.
-                if spec.gap_bits and len(spec.gap_bits) > 0:
-                    gap = int(spec.gap_bits)
-                    for x in xrange(gap):
-                        if x in toggle_bits:
-                            t = (data[x] + (radix / 2)) % radix
-                            raw.extend(spec.encoder[t])
-                        else:
-                            raw.extend(spec.encoder[data[x]])
-                    raw.extend(spec.gap)
-                    for x in xrange(gap, len(data)):
-                        if x in toggle_bits:
-                            t = (data[x] + (radix / 2)) % radix
-                            raw.extend(spec.encoder[t])
-                        else:
-                            raw.extend(spec.encoder[data[x]])
-                else:
-                    for x in xrange(len(data)):
-                        if x in toggle_bits:
-                            t = (data[x] + (radix / 2)) % radix
-                            raw.extend(spec.encoder[t])
-                        else:
-                            raw.extend(spec.encoder[data[x]])
-                if len(spec.lead_out) > 0:
-                    raw.extend(spec.lead_out)
-                toggle_frame = self.data2pulses(spec, raw)
-            """
             return spec.frequency, spec.repeat_count, main_frame, repeat_frame, toggle_frame
-
         except Exception, e:
             print "ERR:PulseGen:build_frames: %s" % e
 
     @staticmethod
-    def hex_to_binary(hex_value):
-        return hex_value
+    def hex_to_binary(hex_string, base):
+        bin_string = '{:08b}'.format(int(hex_string, 16))
+        return bin_string
 
     def build_from_hex(self, spec, full_code, raw):
         data = []
@@ -292,7 +236,7 @@ class Hydra:
             for ea in words:
                 # check if need to convert from hex to binary.
                 if not raw and radix < 16:
-                    val = self.hex_to_binary(ea)
+                    val = self.hex_to_binary(ea, radix)
                 else:
                     val = ea
                 idx = len(data)
