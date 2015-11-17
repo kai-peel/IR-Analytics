@@ -149,6 +149,17 @@ class _IRProtocol:
         self.dta = []  # burst pair array. one pair per encoding value.
         self.gapL = 0
 
+        self.t_linH = 0  # lead-in burst pair.
+        self.t_linL = 0  # lead-in burst pair.
+        self.t_loutH = 0  # lead-out burst pair.
+        self.t_loutL = 0  # lead-out burst pair.
+        self.t_rinH = 0  # lead-in burst pair for repeat frame.
+        self.t_rinL = 0  # lead-in burst pair for repeat frame.
+        self.t_routH = 0  # lead-out burst pair for repeat frame.
+        self.t_routL = 0  # lead-out burst pair for repeat frame.
+        self.t_gapL = 0  # maker for checksum.
+        self.t_dta = []  # burst pair array. one pair per encoding value.
+
         # raw intermediate data
         self._leadinH = []
         self._leadinL = []
@@ -169,23 +180,28 @@ class _IRProtocol:
         self.rcnt = median(self._repCnt)
 
         if len(self._leadinH) > 0:
-            self.linH = usec2pulse(average2(self._leadinH), self.frequency)
-            self.linL = usec2pulse(average2(self._leadinL), self.frequency)
+            self.t_linH = median(self._leadinH)
+            self.t_linL = median(self._leadinL)
+            self.linH = usec2pulse(self.t_linH, self.frequency)
+            self.linL = usec2pulse(self.t_linL, self.frequency)
         if len(self._leadoutH) > 0:
-            self.loutH = usec2pulse(average2(self._leadoutH), self.frequency)
-            # no scientific way to distinguish between real or imposed value.
-            self.loutL = usec2pulse(median(self._leadoutL), self.frequency)
-
+            self.t_loutH = median(self._leadoutH)
+            self.t_loutL = median(self._leadoutL)
+            self.loutH = usec2pulse(self.t_loutH, self.frequency)
+            self.loutL = usec2pulse(self.t_loutL, self.frequency)
         if len(self._repinH) > 0:
-            self.rinH = usec2pulse(average2(self._repinH), self.frequency)
-            self.rinL = usec2pulse(average2(self._repinL), self.frequency)
+            self.t_rinH = median(self._repinH)
+            self.t_rinL = median(self._repinL)
+            self.rinH = usec2pulse(self.t_rinH)
+            self.rinL = usec2pulse(self.t_rinL)
         if len(self._repoutH) > 0:
-            self.routH = usec2pulse(average2(self._repoutH), self.frequency)
-            # no scientific way to distinguish between real or imposed value.
-            self.routL = usec2pulse(median(self._repoutL), self.frequency)
-
+            self.t_routH = median(self._repoutH)
+            self.t_routL = median(self._repoutL)
+            self.routH = usec2pulse(self.t_routH)
+            self.routL = usec2pulse(self.t_routL)
         if len(self._gapL) > 0:
-            self.gapL = usec2pulse(average2(self._gapL), self.frequency)
+            self.t_gapL = median(self._gapL)
+            self.gapL = usec2pulse(self.t_gapL, self.frequency)
 
         # data decoding logic.
         dH = analyze2(self._dataH, self.frequency)
@@ -194,6 +210,7 @@ class _IRProtocol:
         # pulse modulation encoders.
         for pH in dH:
             for pL in dL:
+                self.t_dta.append([pH, pL])
                 self.dta.append([usec2pulse(pH, self.frequency), usec2pulse(pL, self.frequency)])
 
 
@@ -203,9 +220,11 @@ class _Logger:
     def __init__(self, tag):
         time_stamp_suffix = time.strftime("%y%m%d%H%M")
         protocol_filename = "%s%s_protocol.csv" % (tag, time_stamp_suffix)
+        usec_filename = "%s%s_usec.csv" % (tag, time_stamp_suffix)
         codeset_filename = "%s%s_codesets.csv" % (tag, time_stamp_suffix)
         code_filename = "%s%s_keycodes.csv" % (tag, time_stamp_suffix)
         self.prot = codecs.open(protocol_filename, 'w', 'utf-8')
+        self.usec = codecs.open(usec_filename, 'w', 'utf-8')
         self.cset = codecs.open(codeset_filename, 'w', 'utf-8')
         self.keys = codecs.open(code_filename, 'w', 'utf-8')
         self.start_time = datetime.datetime.now()
@@ -215,6 +234,7 @@ class _Logger:
         end_time = datetime.datetime.now()
         print "Duration: from %s to %s (%s).\n" % (self.start_time, end_time, (end_time - self.start_time))
         self.prot.close()
+        self.usec.close()
         self.cset.close()
         self.keys.close()
 
@@ -451,6 +471,7 @@ def protocol_print(logs, prot):
         #logs.cset.write("codeset_id|protocol_id|repeat_count|data_length\n")
         logs.cset.write("%d|%d\n" % (prot.rcnt, prot.dtlen))
         logs.cset.flush()
+
         #logs.prot.write("protocol_id|format|frequency|little_endian|lead_in|lead_out|repeat_in|repeat_out|encoders\n")
         logs.prot.write("%r|%d,%d|%d,%d|%d,%d|%d,%d|%s\n" %
                         (prot.lsb,
@@ -460,6 +481,16 @@ def protocol_print(logs, prot):
                          prot.routH, prot.routL,
                          prot.dta))
         logs.prot.flush()
+
+        logs.usec.write("%r|%d,%d|%d,%d|%d,%d|%d,%d|%s\n" %
+                        (prot.lsb,
+                         prot.t_linH, prot.t_linL,
+                         prot.t_loutH, prot.t_loutL,
+                         prot.t_rinH, prot.t_rinL,
+                         prot.t_routH, prot.t_routL,
+                         prot.t_dta))
+        logs.usec.flush()
+
     except Exception, e:
         print 'print_protocol::%s' % e
 
@@ -491,6 +522,7 @@ def test(codeset=0):
     cnx = ir.DBConnection()
     logs = _Logger("tset")
     logs.prot.write("protocol_id|codeset_id|format|frequency|little_endian|lead_in|lead_out|repeat_in|repeat_out|encoders\n")
+    logs.usec.write("protocol_id|codeset_id|format|frequency|little_endian|lead_in|lead_out|repeat_in|repeat_out|encoders\n")
     logs.cset.write("codeset_id|protocol_id|cloud_size|repeat_count|content_length\n")
     logs.keys.write("code_id|codeset_id|function_id|content\n")
     try:
@@ -525,8 +557,8 @@ def main():
         logs.prot.write("protocol_id|codeset_id|format|frequency|little_endian|lead_in|lead_out|repeat_in|repeat_out|encoders\n")
         logs.cset.write("codeset_id|protocol_id|cloud_size|repeat_count|content_length\n")
         logs.keys.write("code_id|codeset_id|function_id|content\n")
-        test_all(cnx, logs)
-        #protocol_analysis(logs, cnx, 'LC7464M Panasonic')
+        #test_all(cnx, logs)
+        protocol_analysis(logs, cnx, 'dish(56K)')
     except Exception, e:
         print "main::%s" % e
 
