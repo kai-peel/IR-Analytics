@@ -61,8 +61,19 @@ class DBConnection:
 class Logger:
     start_time = None
 
-    def __init__(self, tag):
+    def __init__(self, tag, cnt=1, log_time=True):
         time_stamp_suffix = time.strftime("%Y%m%d%H%M%S")
+        self.cnt = cnt
+        self.log_time = log_time
+        self.logs = []
+        self.start_time = datetime.datetime.now()
+        for x in xrange(self.cnt):
+            filename = "%s_%d_%s.log" % (tag, x, time_stamp_suffix)
+            log = codecs.open(filename, 'w', 'utf-8')
+            if self.log_time:
+                log.write("Started: %s.\n" % self.start_time)
+            self.logs.append(log)
+        """
         log_filename = "%s%s.log" % (tag, time_stamp_suffix)
         out_filename = "%s%s.txt" % (tag, time_stamp_suffix)
         bat_filename = "%s%s.bat" % (tag, time_stamp_suffix)
@@ -71,20 +82,18 @@ class Logger:
         self.bat = codecs.open(bat_filename, 'w', 'utf-8')
         self.start_time = datetime.datetime.now()
         self.log.write("Started: %s.\n" % self.start_time)
+        """
 
     def __del__(self):
         end_time = datetime.datetime.now()
-        self.log.write("Duration: from %s to %s (%s).\n" % (self.start_time, end_time, (end_time - self.start_time)))
-        self.log.close()
-        self.out.close()
-        self.bat.close()
+        for x in xrange(self.cnt):
+            if self.log_time:
+                self.logs[x].write("Duration: from %s to %s (%s).\n" %
+                                   (self.start_time, end_time, (end_time - self.start_time)))
+            self.logs[x].close()
 
-    def write(self, b):
-        self.log.write('%s\n' % b)
-        print b
-
-    def pout(self, b):
-        self.out.write('%s' % b)
+    def write(self, b, idx=0):
+        self.logs[idx].write('%s\n' % b)
         print b
 
 
@@ -318,6 +327,28 @@ def send_cir_adb(frequency, irdata):
     except Exception, e:
         print "ERR:send_cir_adb: %s" % e
 
+
+def send_cir_adb2(frequency, ir_data, repeat, ir_repeat):
+    try:
+        adb_ir_data = ("," + ",".join(ir_data))
+        if ir_repeat and len(ir_repeat) > 1:
+            adb_ir_data += ("," + ",".join(ir_repeat))
+            adb_ir_rep = ir_repeat
+        else:
+            adb_ir_rep = ir_data
+
+        for i in range(repeat - 1):
+            adb_ir_data += ("," + ",".join(adb_ir_rep))
+
+        adbcmdprefix = 'adb shell '
+        #cir_file = '/sdcard/irtest.txt'
+        adbcmd = adbcmdprefix + '"echo 1,' + str(frequency) + adb_ir_data + ' > /sdcard/irtest.txt"'
+        os.popen(adbcmd)
+        adbcmd = adbcmdprefix + 'am start -n com.peel.peelkktestapp.app/com.peel.peelkktestapp.app.MainActivity'
+        os.popen(adbcmd)
+
+    except Exception, e:
+        print e
 
 """
 def sendadb_ios_http(filename, uesid):

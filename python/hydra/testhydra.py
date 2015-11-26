@@ -60,7 +60,7 @@ def test():
     print "Started: %s." % start_time
 
     #test_codeset(log, v2, hy, 100012)
-    test_codeset(log, v2, hy, 180131)
+    test_codeset(log, v2, hy, 1001633)
     #test_pulse(v2, hy, 'RC-5x') 'uPD6121G
 
     end_time = datetime.datetime.now()

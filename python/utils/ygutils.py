@@ -52,7 +52,7 @@ PCOPYDATASTRUCT = ctypes.POINTER(COPYDATASTRUCT)
 
 
 class Listener(threading.Thread):
-    def __init__(self, frequency=38029, timeout=10.0):
+    def __init__(self, frequency=0, timeout=10.0):
         threading.Thread.__init__(self)
         self.data_type = None
         self.data_sys_code = None

@@ -135,7 +135,7 @@ class Hydra:
         try:
             for ea in data:
                 if ea[1] != state:
-                    # check leading 0.
+                    # check for leading 0s, wrap it around as trailing.
                     if len(pulses) < 1 and state == 0:
                         leading = current
                     else:
@@ -153,6 +153,10 @@ class Hydra:
                 pulses.append(current)
                 if leading > 0:
                     pulses.append(leading)
+
+            # pulses always start with hi state, and form in pairs.
+            if (len(pulses) % 2) != 0:
+                pulses.append(0)
             return pulses
         except Exception, e:
             print "ERR:PulseGen:data2pulses: %s" % e

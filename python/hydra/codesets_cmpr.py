@@ -561,7 +561,7 @@ def main():
         logs.cset.write("codeset_id|protocol_id|cloud_size|repeat_count|content_length\n")
         logs.keys.write("code_id|codeset_id|function_id|content\n")
         #test_all(cnx, logs)
-        protocol_analysis(logs, cnx, 'dish(56K)')
+        protocol_analysis(logs, cnx, 'ECHOSTAR-D5C5(56KHz)')
     except Exception, e:
         print "main::%s" % e
 
