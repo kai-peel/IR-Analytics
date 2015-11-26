@@ -79,7 +79,7 @@ def test_uescode(log_hex, log_pulses, hydb, enc, uesid, encodedbinary2, fmt, sys
         frequency, repeat_count, main_frame, repeat_frame, toggle_frame = hydb.build(enc, encodedbinary2)
 
         #time.sleep(1)  # stabilizer
-        ir.send_cir_adb2(frequency, main_frame, repeat_count, repeat_frame)
+        ir.send_cir_adb2(frequency, map(str, main_frame), repeat_count, map(str, repeat_frame))
         adb_thread.join()
         #time.sleep(1)  # stabilizer
 
