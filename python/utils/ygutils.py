@@ -90,7 +90,7 @@ class Listener(threading.Thread):
             hinst,
             None
         )
-        #print "listening from %d" % self.hWnd
+        # print "listening from %d" % self.hWnd
 
         t = threading.Timer(self.timeout, self.OnTimer)  # Quit at timer fire
         t.start()
@@ -104,10 +104,10 @@ class Listener(threading.Thread):
 
     def OnCopyData(self, hwnd, msg, wparam, lparam):
         try:
-            #print "hwnd:%d, msg:%d, wparam:%d, lparam:%d" % (hwnd, msg, wparam, lparam)
+            # print "hwnd:%d, msg:%d, wparam:%d, lparam:%d" % (hwnd, msg, wparam, lparam)
 
             pCDS = ctypes.cast(lparam, PCOPYDATASTRUCT)
-            #print "CDS->dwData:%d, CDS->cbData:%d" % (pCDS.contents.dwData, pCDS.contents.cbData)
+            # print "CDS->dwData:%d, CDS->cbData:%d" % (pCDS.contents.dwData, pCDS.contents.cbData)
 
             pIR = ctypes.cast(pCDS.contents.lpData, PIRDATA)
             self.data_type = pIR.contents.type
@@ -121,12 +121,12 @@ class Listener(threading.Thread):
             self.data_wave_len = pIR.contents.wave_len
             self.decode_yg920(pIR.contents.format,
                               pIR.contents.wave_len, pIR.contents.wave_buf)
-            #self.data_wave_buf = pIR.contents.wave_buf
+            # self.data_wave_buf = pIR.contents.wave_buf
 
         except Exception, e:
             print e
 
-        #print "Exiting message pump..."
+        # print "Exiting message pump..."
         win32gui.PostQuitMessage(0)
         return 1
 
@@ -134,28 +134,29 @@ class Listener(threading.Thread):
         print "Listener timeout..."
         win32gui.PostMessage(self.hWnd, win32con.WM_QUIT, 0, 0)
 
-    def decode_yg920(self, fmt, len, buf):
+    def decode_yg920(self, fmt, size, buf):
         self.data_wave_freq = 38000
         e = fmt.find("K)")
         if e > 0:
-            #self.data_wave_freq = int(float(fmt[fmt.find("(")+1:e-1]) * 1000)
             self.data_wave_freq = int(float(fmt[fmt.find("(")+1:e]) * 1000)
         else:
             e = fmt.find("KHz)")
             if e > 0:
-                #self.data_wave_freq = int(float(fmt[fmt.find("(")+1:e-1]) * 1000)
                 self.data_wave_freq = int(float(fmt[fmt.find("(")+1:e]) * 1000)
-
         if self.frequency > 0:
-            f = self.frequency / 10000000.0
+            f = float(self.frequency) / 10000000.0
         else:
-            f = self.data_wave_freq / 10000000.0
-        #print "factor: i:%d, o:%d, f:%f." % (self.frequency, self.data_wave_freq, f)
-        iterable = (int(buf[x] * f) for x in range(len))
+            f = float(self.data_wave_freq) / 10000000.0
+        iterable = (int(buf[x] * f) for x in range(size))
         self.data_wave_buf = np.fromiter(iterable, np.int)
-        #for x in range(len):
-        #    print buf[x]
-        #    self.data_wave_buf.append(buf[x])
+        """
+        hi = buf[::2]
+        lo = buf[1::2]
+        for x in range(len(hi)):
+            # adjust for 1/3 duty cycle.
+            self.data_wave_buf.append(int((hi[x] * f) + (2.0 / 3.0)))
+            self.data_wave_buf.append(int((lo[x] * f) - (2.0 / 3.0)))
+        """
 
 
 def find_window(window_name):
@@ -177,5 +178,5 @@ def find_analyzer():
         print "Using \"%s\"..." % IR_READER_APP
         return hwnd
 
-    #print "IR analyzer is NOT running!" % APP_NAME
+    # print "IR analyzer is NOT running!" % APP_NAME
     return None

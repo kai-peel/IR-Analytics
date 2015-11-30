@@ -368,3 +368,27 @@ def sendadb_smartircmd(frequency, irdata):
     print "adb shell command is \n" + adbcmd
     os.popen(adbcmd)
 """
+
+LEAD_OUT = 700
+PULSE_ERR_SIZE = 3
+PULSE_ERR_RATIO = 10
+PULSE_ERR_MAX_RATIO = 25
+
+
+def pulses_compare(pu1, pu2):
+    try:
+        error_ratio = 0
+        error_size = 0
+        for x in xrange(min(len(pu1), len(pu2)) - 1):
+            if int(pu1[x]) < LEAD_OUT and int(pu2[x]) < LEAD_OUT:
+                percent = abs((float(pu1[x]) - float(pu2[x])) * 100 / (float(pu1[x])))
+                if percent > error_ratio:
+                    error_ratio = percent
+                delta = abs(int(pu1[x]) - int(pu2[x]))
+                if delta > error_size:
+                    error_size = delta
+            else:
+                break
+        return error_ratio, error_size
+    except Exception, e:
+        print "ERR:pulses_compare: %s" % e

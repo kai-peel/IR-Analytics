@@ -7,9 +7,10 @@ import datetime
 from utils import irutils as ir
 from utils import pulsegen as gen
 from utils import ygutils as yg
-IRDBV1 = "175.41.143.31"  # production
-IRDBV2 = "54.251.240.47"  # secured production
-IRDBSG = "54.254.101.29"  # staging
+#IRDBV1 = "175.41.143.31"  # production
+PRODUCTION = "54.251.240.47"  # secured production
+STAGING = "54.254.101.29"  # staging
+
 
 def test_codeset(log, irdb, irgen, codeset):
     try:
@@ -84,11 +85,19 @@ def test_uescode(log_hex, log_pulses, hydb, enc, uesid, encodedbinary2, fmt, sys
         #time.sleep(1)  # stabilizer
 
         if adb_thread.data_full_code:
-            print "format:%s, sys:%d, data:%d, full:%s." % (adb_thread.data_format, adb_thread.data_sys_code, adb_thread.data_data_code, adb_thread.data_full_code)
-            log_hex.write('%d|%d|%s|%s|\n' % (adb_thread.data_sys_code, adb_thread.data_data_code, adb_thread.data_format, adb_thread.data_full_code))
-            log_pulses.write('%d|%s|\n' % (adb_thread.data_wave_freq, adb_thread.data_wave_buf))
+            print "format:%s, sys:%d, data:%d, full:%s." % (adb_thread.data_format, adb_thread.data_sys_code,
+                                                            adb_thread.data_data_code, adb_thread.data_full_code)
+            log_hex.write('%d|%d|%s|%s|%s|' % (adb_thread.data_sys_code, adb_thread.data_data_code,
+                                               adb_thread.data_format, adb_thread.data_full_code, 'P'))
+            value_check = 'P' if (adb_thread.data_sys_code == syscode and adb_thread.data_data_code == datacode and
+                                  adb_thread.data_format == fmt) else 'F'
+            binary_check = 'P' if (adb_thread.data_full_code == encodedbinary2) else 'F'
+            log_hex.write('%s|%s|\n' % (value_check, binary_check))
+            log_pulses.write('%d|%s|' % (adb_thread.data_wave_freq, ','.join(map(str, adb_thread.data_wave_buf))))
+            ratio, size = ir.pulses_compare(map(int, cloud_ir_data), adb_thread.data_wave_buf)
+            log_pulses.write('%d|%d|\n' % (ratio, size))
         else:
-            log_hex.write('||||\n')
+            log_hex.write('||||F|||\n')
             log_pulses.write('||\n')
         log_hex.flush()
         log_pulses.flush()
@@ -102,7 +111,7 @@ def test_format(log_hex, log_pulses, irdb, hydb, fmt):
         sql = ('SELECT a.uesid, a.encodedbinary2, a.format, a.syscode, a.datacode FROM uescodes a '
                '  JOIN uesidfunctionmap b ON b.uesid=a.uesid AND b.activeflag="Y" '
                '  JOIN codesets c ON c.codesetid=b.codesetid AND c.activeflag="Y" '
-               '  WHERE a.format ="%s" GROUP BY a.uesid; ' % fmt)
+               '  WHERE a.format ="%s" GROUP BY a.uesid LIMIT 3; ' % fmt)
         irdb.cursor.execute(sql)
         rows = irdb.cursor.fetchall()
         for ea in rows:
@@ -132,9 +141,9 @@ def test():
     try:
         f = ir.Logger('hyg', 2)
         f.logs[0].write('uesid|db_encodedbinary2|db_fmt|db_syscode|db_datacode|')
-        f.logs[0].write('data_sys_code|data_data_code|data_format|data_full_code|\n')
+        f.logs[0].write('data_sys_code|data_data_code|data_format|data_full_code|send|value|exact|\n')
         f.logs[1].write('uesid|cloud_frequency|cloud_ir_data|cloud_repeat|cloud_ir_rep')
-        f.logs[1].write('data_wave_freq|data_wave_buf|\n')
+        f.logs[1].write('data_wave_freq|data_wave_buf|percent|size|\n')
 
         #v2 = ir.DBConnection()
         v2 = ir.DBConnection(host='54.254.101.29', user='kai', passwd='p33lz3l')
