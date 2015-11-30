@@ -128,7 +128,7 @@ def test_format(log_hex, log_pulses, irdb, hydb, fmt):
 
 def get_formats(db):
     try:
-        sql = 'SELECT * FROM protocols WHERE version IS NOT NULL; '
+        sql = 'SELECT * FROM protocols WHERE version IS NOT NULL AND frequency < 50000; '
         db.cursor.execute(sql)
         rows = db.cursor.fetchall()
         return rows
