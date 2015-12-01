@@ -239,7 +239,7 @@ class Hydra:
             radix = len(spec.encoder)
             for ea in words:
                 # check if need to convert from hex to binary.
-                if not raw and radix < 16:
+                if not raw and radix < 4:
                     val = self.hex_to_binary(ea, radix)
                 else:
                     val = ea
