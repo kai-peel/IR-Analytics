@@ -28,6 +28,7 @@ class ProtocolSpec:
         self.repeat_in = []
         self.repeat_out = []
         self.gap = []
+        self.interval = []
         self.encoder = []
         """
         CREATE TABLE `pulses` (
@@ -58,6 +59,8 @@ class ProtocolSpec:
                     self.repeat_out.append([pulse_count, pulse_state])
                 elif data_value == -5:
                     self.gap.append([pulse_count, pulse_state])
+                elif data_value == -6:
+                    self.interval.append([pulse_count, pulse_state])
 
         except Exception, e:
             print "ERR:ProtocolSpec:__init__: %s" % e
@@ -162,7 +165,7 @@ class Hydra:
             print "ERR:PulseGen:data2pulses: %s" % e
 
     @staticmethod
-    def build_frame(data, encoder, lead_in, lead_out, gap, toggle_bits, gap_bits):
+    def build_frame(data, encoder, lead_in, lead_out, gap, toggle_bits, gap_bits, interval):
         try:
             raw = []
             # construct pulse sequence for main frame.
@@ -201,6 +204,9 @@ class Hydra:
                             raw.extend(encoder[data[x]])
             if lead_out and len(lead_out) > 0:
                 raw.extend(lead_out)
+            if interval and len(interval) > 0:
+                s = np.sum(raw, axis=0)
+                raw.extend([[interval[0][0] - s[0], interval[0][1]]])
             return raw
 
         except Exception, e:
@@ -208,18 +214,21 @@ class Hydra:
 
     def build_frames(self, spec, data):
         try:
-            raw = self.build_frame(data, spec.encoder, spec.lead_in, spec.lead_out, spec.gap, None, spec.gap_bits)
+            raw = self.build_frame(data, spec.encoder, spec.lead_in, spec.lead_out, spec.gap, None, spec.gap_bits,
+                                   spec.interval)
             main_frame = self.data2pulses(spec, raw)
 
             if len(spec.repeat_in) > 0 or len(spec.repeat_out) > 0 or spec.repeat_content == 'Y':
                 rdata = data if spec.repeat_content == 'Y' else None
-                raw = self.build_frame(rdata, spec.encoder, spec.repeat_in, spec.repeat_out, spec.gap, spec.repeat_toggle_bits, spec.gap_bits)
+                raw = self.build_frame(rdata, spec.encoder, spec.repeat_in, spec.repeat_out, spec.gap,
+                                       spec.repeat_toggle_bits, spec.gap_bits, spec.interval)
                 repeat_frame = self.data2pulses(spec, raw)
             else:
                 repeat_frame = []
 
             if spec.toggle_bits and len(spec.toggle_bits) > 0:
-                raw = self.build_frame(data, spec.encoder, spec.lead_in, spec.lead_out, spec.gap, spec.toggle_bits, spec.gap_bits)
+                raw = self.build_frame(data, spec.encoder, spec.lead_in, spec.lead_out, spec.gap, spec.toggle_bits,
+                                       spec.gap_bits, spec.interval)
                 toggle_frame = self.data2pulses(spec, raw)
             else:
                 toggle_frame = []
