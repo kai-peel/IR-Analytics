@@ -13,7 +13,8 @@ IRDBSG = '54.254.101.29'  # staging
 
 
 class ProtocolSpec:
-    def __init__(self, idx, modulation, frequency, endian, toggle_bits, gap_bits, repeat_count, repeat_content, repeat_toggle, spec):
+    def __init__(self, idx, modulation, frequency, endian, toggle_bits, gap_bits, repeat_count, repeat_content,
+                 repeat_toggle, trailer_bits, spec):
         self.id = idx
         self.modulation = modulation
         self.frequency = frequency
@@ -30,6 +31,8 @@ class ProtocolSpec:
         self.gap = []
         self.interval = []
         self.encoder = []
+        self.trailer_bits = trailer_bits
+        self.trailer = []
         """
         CREATE TABLE `pulses` (
           `prot_id` int(10) unsigned NOT NULL,
@@ -61,6 +64,8 @@ class ProtocolSpec:
                     self.gap.append([pulse_count, pulse_state])
                 elif data_value == -6:
                     self.interval.append([pulse_count, pulse_state])
+                elif data_value <= -50:
+                    self.insert(self.trailer, abs(data_value + 50), pulse_count, pulse_state)
 
         except Exception, e:
             print "ERR:ProtocolSpec:__init__: %s" % e
@@ -106,13 +111,14 @@ class Hydra:
             repeat = prot[7]
             rdata = prot[8]
             rtoggle = prot[9]
+            trailer = prot[10]
 
             # protocol data
             sql = ("SELECT * FROM pulses WHERE prot_id = %d ORDER BY seq; " % idx)
             self.cursor.execute(sql)
             rows = self.cursor.fetchall()
 
-            enc = ProtocolSpec(idx, modulation, frequency, endian, toggle, gap, repeat, rdata, rtoggle, rows)
+            enc = ProtocolSpec(idx, modulation, frequency, endian, toggle, gap, repeat, rdata, rtoggle, trailer, rows)
             return enc
 
         except Exception, e:
@@ -165,12 +171,31 @@ class Hydra:
             print "ERR:PulseGen:data2pulses: %s" % e
 
     @staticmethod
-    def build_frame(data, encoder, lead_in, lead_out, gap, toggle_bits, gap_bits, interval):
+    def set_data(pulses, position, value, encoder, trailer, trailer_pos):
+        try:
+            if position in trailer_pos:
+                pulses.extend(trailer[value])
+            else:
+                pulses.extend(encoder[value])
+            return position + 1
+        except Exception, e:
+            print "ERR:PulseGen:set_data: %s" % e
+
+    def build_frame(self, data, encoder, lead_in, lead_out, gap, toggle_bits, gap_bits, interval, trailer_bits, trailer):
         try:
             raw = []
+            pos = 0
+
+            # alternative encoder.
+            if trailer_bits and len(trailer_bits) > 0:
+                trailer_pos = map(int, trailer_bits.split(','))
+            else:
+                trailer_pos = []
+
             # construct pulse sequence for main frame.
             if lead_in and len(lead_in) > 0:
                 raw.extend(lead_in)
+
             # check if there is data content.
             if data and len(data) > 0:
                 radix = len(encoder)  # encoding base.
@@ -179,34 +204,44 @@ class Hydra:
                     toggle_pos = map(int, toggle_bits.split(','))
                 else:
                     toggle_pos = []
+
                 # check if there is a half-marker.
                 if gap_bits and len(gap_bits) > 0:
                     gap_pos = int(gap_bits)  # support only 1 gap for now.
                     for x in xrange(gap_pos):
                         if x in toggle_pos:
                             t = (data[x] + (radix / 2)) % radix
-                            raw.extend(encoder[t])
+                            # raw.extend(encoder[t])
+                            pos = self.set_data(raw, pos, t, encoder, trailer, trailer_pos)
                         else:
-                            raw.extend(encoder[data[x]])
+                            # raw.extend(encoder[data[x]])
+                            pos = self.set_data(raw, pos, data[x], encoder, trailer, trailer_pos)
                     raw.extend(gap)
                     for x in xrange(gap_pos, len(data)):
                         if x in toggle_pos:
                             t = (data[x] + (radix / 2)) % radix
-                            raw.extend(encoder[t])
+                            # raw.extend(encoder[t])
+                            pos = self.set_data(raw, pos, t, encoder, trailer, trailer_pos)
                         else:
-                            raw.extend(encoder[data[x]])
+                            # raw.extend(encoder[data[x]])
+                            pos = self.set_data(raw, pos, data[x], encoder, trailer, trailer_pos)
                 else:
                     for x in xrange(len(data)):
                         if x in toggle_pos:
                             t = (data[x] + (radix / 2)) % radix
-                            raw.extend(encoder[t])
+                            # raw.extend(encoder[t])
+                            pos = self.set_data(raw, pos, t, encoder, trailer, trailer_pos)
                         else:
-                            raw.extend(encoder[data[x]])
+                            # raw.extend(encoder[data[x]])
+                            pos = self.set_data(raw, pos, data[x], encoder, trailer, trailer_pos)
+
             if lead_out and len(lead_out) > 0:
                 raw.extend(lead_out)
+
             if interval and len(interval) > 0:
                 s = np.sum(raw, axis=0)
                 raw.extend([[interval[0][0] - s[0], interval[0][1]]])
+
             return raw
 
         except Exception, e:
@@ -215,20 +250,20 @@ class Hydra:
     def build_frames(self, spec, data):
         try:
             raw = self.build_frame(data, spec.encoder, spec.lead_in, spec.lead_out, spec.gap, None, spec.gap_bits,
-                                   spec.interval)
+                                   spec.interval, spec.trailer_bits, spec.trailer)
             main_frame = self.data2pulses(spec, raw)
 
             if len(spec.repeat_in) > 0 or len(spec.repeat_out) > 0 or spec.repeat_content == 'Y':
                 rdata = data if spec.repeat_content == 'Y' else None
                 raw = self.build_frame(rdata, spec.encoder, spec.repeat_in, spec.repeat_out, spec.gap,
-                                       spec.repeat_toggle_bits, spec.gap_bits, spec.interval)
+                                       spec.repeat_toggle_bits, spec.gap_bits, spec.interval, spec.trailer_bits, spec.trailer)
                 repeat_frame = self.data2pulses(spec, raw)
             else:
                 repeat_frame = []
 
             if spec.toggle_bits and len(spec.toggle_bits) > 0:
                 raw = self.build_frame(data, spec.encoder, spec.lead_in, spec.lead_out, spec.gap, spec.toggle_bits,
-                                       spec.gap_bits, spec.interval)
+                                       spec.gap_bits, spec.interval, spec.trailer_bits, spec.trailer)
                 toggle_frame = self.data2pulses(spec, raw)
             else:
                 toggle_frame = []
