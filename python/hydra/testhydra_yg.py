@@ -144,7 +144,9 @@ def test_format(log_hex, log_pulses, irdb, hydb, fmt):
         sql = ('SELECT a.uesid, a.encodedbinary2, a.format, a.syscode, a.datacode FROM k_uescodes a '
                '  JOIN k_uesidfunctionmap b ON b.uesid=a.uesid AND b.activeflag="Y" '
                '  JOIN k_codesets c ON c.codesetid=b.codesetid AND c.activeflag="Y" '
-               '  WHERE a.format ="%s" GROUP BY a.uesid; ' % fmt)
+               #'  WHERE a.format ="%s" GROUP BY a.uesid LIMIT 10; '
+               '  WHERE a.format ="%s" GROUP BY a.uesid; '
+               % fmt)
         irdb.cursor.execute(sql)
         rows = irdb.cursor.fetchall()
         for ea in rows:
