@@ -3,7 +3,7 @@ __author__ = 'kai'
 __version__ = '1.0'
 __date__ = '2015-11-04'
 import datetime
-#import time
+import time
 from utils import irutils as ir
 from utils import pulsegen as gen
 from utils import ygutils as yg
@@ -85,10 +85,10 @@ def test_uescode(log_hex, log_pulses, hydb, enc, uesid, encodedbinary2, fmt, sys
 
         frequency, repeat_count, main_frame, repeat_frame, toggle_frame = hydb.build(enc, encodedbinary2)
 
-        # time.sleep(1)  # stabilizer
+        time.sleep(1)  # stabilizer
         ir.send_cir_adb2(frequency, map(str, main_frame), repeat_count, map(str, repeat_frame))
         adb_thread.join()
-        # time.sleep(1)  # stabilizer
+        time.sleep(1)  # stabilizer
 
         if adb_thread.data_full_code:
             print "format:%s, sys:%d, data:%d, full:%s." % (adb_thread.data_format, adb_thread.data_sys_code,
@@ -126,10 +126,10 @@ def test_toggle(log_hex, log_pulses, uesid, encodedbinary2, fmt, syscode, dataco
         log_hex.write('%d|%s|%s|%d|%d|' % (uesid, encodedbinary2, fmt, syscode, datacode))
         log_pulses.write('%d|%d|%s|%d|%s|' % (uesid, cloud_frequency, ','.join(cloud_ir_toggle), cloud_repeat, ','.join(cloud_ir_rep)))
 
-        # time.sleep(1)  # stabilizer
+        time.sleep(1)  # stabilizer
         ir.send_cir_adb2(frequency, map(str, toggle_frame), repeat_count, map(str, repeat_frame))
         adb_thread.join()
-        # time.sleep(1)  # stabilizer
+        time.sleep(1)  # stabilizer
 
         if adb_thread.data_full_code:
             print "format:%s, sys:%d, data:%d, full:%s." % (adb_thread.data_format, adb_thread.data_sys_code,
