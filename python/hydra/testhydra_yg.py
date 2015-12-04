@@ -106,39 +106,51 @@ def test_uescode(log_hex, log_pulses, hydb, enc, uesid, encodedbinary2, fmt, sys
             log_hex.write('||||F|||\n')
             log_pulses.write('||\n')
 
-        if len(toggle_frame) > 0:
-            log_hex.write('%d|%s|%s|%d|%d|' % (uesid, encodedbinary2, fmt, syscode, datacode))
-            log_pulses.write('%d|%d|%s|%d|%s|' % (uesid, cloud_frequency, ','.join(cloud_ir_toggle), cloud_repeat, ','.join(cloud_ir_rep)))
 
-            # time.sleep(1)  # stabilizer
-            ir.send_cir_adb2(frequency, map(str, toggle_frame), repeat_count, map(str, repeat_frame))
-            adb_thread.join()
-            # time.sleep(1)  # stabilizer
+        log_hex.flush()
+        log_pulses.flush()
+        return cloud_frequency, cloud_repeat, cloud_ir_rep, cloud_ir_toggle, \
+               frequency, repeat_count, repeat_frame, toggle_frame
 
-            if adb_thread.data_full_code:
-                print "format:%s, sys:%d, data:%d, full:%s." % (adb_thread.data_format, adb_thread.data_sys_code,
-                                                                adb_thread.data_data_code, adb_thread.data_full_code)
-                log_hex.write('%d|%d|%s|%s|%s|' % (adb_thread.data_sys_code, adb_thread.data_data_code,
-                                                   adb_thread.data_format, adb_thread.data_full_code, 'P'))
-                value_check = 'P' if (adb_thread.data_sys_code == syscode and adb_thread.data_data_code == datacode and
-                                      fmt in adb_thread.data_format) else 'F'
-                binary_check = 'P' if (adb_thread.data_full_code == encodedbinary2) else 'F'
-                log_hex.write('%s|%s|\n' % (value_check, binary_check))
-                log_pulses.write('%d|%s|' % (adb_thread.data_wave_freq, ','.join(map(str, adb_thread.data_wave_buf))))
-                if len(cloud_ir_toggle) > 0:
-                    cloud_frame = cloud_ir_toggle
-                else:
-                    cloud_frame = cloud_ir_data
-                ratio, size = ir.pulses_compare(map(int, cloud_frame), adb_thread.data_wave_buf)
-                log_pulses.write('%d|%d|\n' % (ratio, size))
-            else:
-                log_hex.write('||||F|||\n')
-                log_pulses.write('||\n')
+    except Exception, e:
+        print 'test_uescode: %s' % e
+
+
+def test_toggle(log_hex, log_pulses, uesid, encodedbinary2, fmt, syscode, datacode,
+                cloud_frequency, cloud_repeat, cloud_ir_rep, cloud_ir_toggle,
+                frequency, repeat_count, repeat_frame, toggle_frame):
+    try:
+        adb_thread = yg.Listener()
+        adb_thread.start()
+
+        log_hex.write('%d|%s|%s|%d|%d|' % (uesid, encodedbinary2, fmt, syscode, datacode))
+        log_pulses.write('%d|%d|%s|%d|%s|' % (uesid, cloud_frequency, ','.join(cloud_ir_toggle), cloud_repeat, ','.join(cloud_ir_rep)))
+
+        # time.sleep(1)  # stabilizer
+        ir.send_cir_adb2(frequency, map(str, toggle_frame), repeat_count, map(str, repeat_frame))
+        adb_thread.join()
+        # time.sleep(1)  # stabilizer
+
+        if adb_thread.data_full_code:
+            print "format:%s, sys:%d, data:%d, full:%s." % (adb_thread.data_format, adb_thread.data_sys_code,
+                                                            adb_thread.data_data_code, adb_thread.data_full_code)
+            log_hex.write('%d|%d|%s|%s|%s|' % (adb_thread.data_sys_code, adb_thread.data_data_code,
+                                               adb_thread.data_format, adb_thread.data_full_code, 'P'))
+            value_check = 'P' if (adb_thread.data_sys_code == syscode and adb_thread.data_data_code == datacode and
+                                  fmt in adb_thread.data_format) else 'F'
+            binary_check = 'P' if (adb_thread.data_full_code == encodedbinary2) else 'F'
+            log_hex.write('%s|%s|\n' % (value_check, binary_check))
+            log_pulses.write('%d|%s|' % (adb_thread.data_wave_freq, ','.join(map(str, adb_thread.data_wave_buf))))
+            ratio, size = ir.pulses_compare(map(int, cloud_ir_toggle), adb_thread.data_wave_buf)
+            log_pulses.write('%d|%d|\n' % (ratio, size))
+        else:
+            log_hex.write('||||F|||\n')
+            log_pulses.write('||\n')
 
         log_hex.flush()
         log_pulses.flush()
     except Exception, e:
-        print 'test_format: %s' % e
+        print 'test_toggle: %s' % e
 
 
 def test_format(log_hex, log_pulses, irdb, hydb, fmt):
@@ -158,7 +170,13 @@ def test_format(log_hex, log_pulses, irdb, hydb, fmt):
             dbfmt = ea[2]
             syscode = ea[3]
             datacode = ea[4]
-            test_uescode(log_hex, log_pulses, hydb, enc, uesid, full_code, dbfmt, syscode, datacode)
+            cloud_frequency, cloud_repeat, cloud_ir_rep, cloud_ir_toggle, \
+            frequency, repeat_count, repeat_frame, toggle_frame \
+                = test_uescode(log_hex, log_pulses, hydb, enc, uesid, full_code, dbfmt, syscode, datacode)
+            if len(toggle_frame) > 0:
+                test_toggle(log_hex, log_pulses, uesid, full_code, dbfmt, syscode, datacode,
+                            cloud_frequency, cloud_repeat, cloud_ir_rep, cloud_ir_toggle,
+                            frequency, repeat_count, repeat_frame, toggle_frame)
 
     except Exception, e:
         print 'test_format: %s' % e
