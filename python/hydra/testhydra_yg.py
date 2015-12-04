@@ -96,7 +96,7 @@ def test_uescode(log_hex, log_pulses, hydb, enc, uesid, encodedbinary2, fmt, sys
             log_hex.write('%d|%d|%s|%s|%s|' % (adb_thread.data_sys_code, adb_thread.data_data_code,
                                                adb_thread.data_format, adb_thread.data_full_code, 'P'))
             value_check = 'P' if (adb_thread.data_sys_code == syscode and adb_thread.data_data_code == datacode and
-                                  adb_thread.data_format == fmt) else 'F'
+                                  fmt in adb_thread.data_format) else 'F'
             binary_check = 'P' if (adb_thread.data_full_code == encodedbinary2) else 'F'
             log_hex.write('%s|%s|\n' % (value_check, binary_check))
             log_pulses.write('%d|%s|' % (adb_thread.data_wave_freq, ','.join(map(str, adb_thread.data_wave_buf))))
@@ -107,6 +107,9 @@ def test_uescode(log_hex, log_pulses, hydb, enc, uesid, encodedbinary2, fmt, sys
             log_pulses.write('||\n')
 
         if len(toggle_frame) > 0:
+            log_hex.write('%d|%s|%s|%d|%d|' % (uesid, encodedbinary2, fmt, syscode, datacode))
+            log_pulses.write('%d|%d|%s|%d|%s|' % (uesid, cloud_frequency, ','.join(cloud_ir_toggle), cloud_repeat, ','.join(cloud_ir_rep)))
+
             # time.sleep(1)  # stabilizer
             ir.send_cir_adb2(frequency, map(str, toggle_frame), repeat_count, map(str, repeat_frame))
             adb_thread.join()
@@ -118,7 +121,7 @@ def test_uescode(log_hex, log_pulses, hydb, enc, uesid, encodedbinary2, fmt, sys
                 log_hex.write('%d|%d|%s|%s|%s|' % (adb_thread.data_sys_code, adb_thread.data_data_code,
                                                    adb_thread.data_format, adb_thread.data_full_code, 'P'))
                 value_check = 'P' if (adb_thread.data_sys_code == syscode and adb_thread.data_data_code == datacode and
-                                      adb_thread.data_format == fmt) else 'F'
+                                      fmt in adb_thread.data_format) else 'F'
                 binary_check = 'P' if (adb_thread.data_full_code == encodedbinary2) else 'F'
                 log_hex.write('%s|%s|\n' % (value_check, binary_check))
                 log_pulses.write('%d|%s|' % (adb_thread.data_wave_freq, ','.join(map(str, adb_thread.data_wave_buf))))
@@ -144,8 +147,8 @@ def test_format(log_hex, log_pulses, irdb, hydb, fmt):
         sql = ('SELECT a.uesid, a.encodedbinary2, a.format, a.syscode, a.datacode FROM k_uescodes a '
                '  JOIN k_uesidfunctionmap b ON b.uesid=a.uesid AND b.activeflag="Y" '
                '  JOIN k_codesets c ON c.codesetid=b.codesetid AND c.activeflag="Y" '
-               #'  WHERE a.format ="%s" GROUP BY a.uesid LIMIT 10; '
-               '  WHERE a.format ="%s" GROUP BY a.uesid; '
+               '  WHERE a.format ="%s" GROUP BY a.uesid LIMIT 3; '
+               #'  WHERE a.format ="%s" GROUP BY a.uesid; '
                % fmt)
         irdb.cursor.execute(sql)
         rows = irdb.cursor.fetchall()
@@ -163,7 +166,7 @@ def test_format(log_hex, log_pulses, irdb, hydb, fmt):
 
 def get_formats(db):
     try:
-        sql = 'SELECT * FROM protocols WHERE version IS NOT NULL AND frequency < 50000; '
+        sql = 'SELECT * FROM protocols WHERE version IS NOT NULL AND frequency < 50000 ORDER BY version DESC; '
         db.cursor.execute(sql)
         rows = db.cursor.fetchall()
         return rows
