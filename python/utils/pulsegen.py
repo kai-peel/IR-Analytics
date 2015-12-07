@@ -279,7 +279,13 @@ class Hydra:
     def build_from_hex(self, spec, full_code, raw):
         data = []
         try:
-            words = full_code.split(' ')
+            frames = full_code.split('-')
+            if len(frames) > 1:
+                spec.repeat_content = 'Y'
+                if spec.repeat_count < 2:
+                    spec.repeat_count = 2
+            frame = frames[0].strip()
+            words = frame.split(' ')
             radix = len(spec.encoder)
             for ea in words:
                 # check if need to convert from hex to binary.
