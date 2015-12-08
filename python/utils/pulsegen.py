@@ -7,6 +7,7 @@ import MySQLdb
 import numpy as np
 #import datetime
 #import irutils as ir
+import math
 IRDBV1 = '175.41.143.31'  # production
 IRDBV2 = '54.251.240.47'  # secured production
 IRDBSG = '54.254.101.29'  # staging
@@ -273,15 +274,23 @@ class Hydra:
 
     @staticmethod
     def hex_to_binary(hex_string, base):
-        bin_string = '{:08b}'.format(int(hex_string, 16))
-        return bin_string
+        # bin_string = '{:08b}'.format(int(hex_string, 16))
+        try:
+            bin_string = ''
+            d = int(hex_string, 16)
+            for x in xrange(int(4 * len(hex_string.strip()) / math.log(base, 2))):
+                d, m = divmod(d, base)
+                bin_string = str(m) + bin_string
+            return bin_string
+        except Exception, e:
+            print 'hex_to_binary: %s' % e
 
     def build_from_hex(self, spec, full_code, raw):
         data = []
         try:
             frames = full_code.split('-')
             if len(frames) > 1:
-                spec.repeat_content = 'Y'
+                # spec.repeat_content = 'Y'
                 if spec.repeat_count < 2:
                     spec.repeat_count = 2
             frame = frames[0].strip()
@@ -289,7 +298,7 @@ class Hydra:
             radix = len(spec.encoder)
             for ea in words:
                 # check if need to convert from hex to binary.
-                if not raw and radix < 4:
+                if not raw and radix < 16:
                     val = self.hex_to_binary(ea, radix)
                 else:
                     val = ea
